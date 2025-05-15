@@ -1,0 +1,903 @@
+---
+title: "Laboratorium 4"
+subtitle: "Wstęp do Analizy Danych | Politechnika Krakowska"
+author: "Jakub Kapała"
+output: 
+  pdf_document:
+    latex_engine: xelatex
+header-includes: |
+  \usepackage{fancyhdr}
+  \usepackage{float}
+  \usepackage{enumitem}
+  \pagestyle{fancy}
+  \fancyhead[L]{\textbf{WdAD - Sprawozdanie - Laboratorium 4}}
+  \fancyhead[R]{\textbf{Jakub Kapała}}
+---
+
+```{r setup, include=FALSE}
+library(Cairo)
+knitr::opts_chunk$set(dev = "CairoPDF", echo = TRUE)
+Sys.setlocale("LC_CTYPE", "pl_PL.UTF-8")
+```
+\begin{center}
+{\small Numer albumu: 151885} \\[0.1cm]
+{\small Data: `r format(Sys.time(), '%d.%m.%Y')`}
+\end{center}
+\newpage
+
+## Zadanie 1 - Warstwy wykresów ggplot2
+#### Treść
+
+\begin{enumerate}[label=1.\arabic*]
+  \item Z biblioteki MASS otworzyć zestaw danych \texttt{mammals}. Przedstawić na wykresie z pakietu \texttt{ggplot2} zależność masy mózgu zawartych w tym zestawieniu ssaków od ich masy ciała
+
+  Potrzebne funkcje: \texttt{ggplot(, aes())}, \texttt{geom\_point()}.
+
+  \item Jak właśnie przekonaliśmy się, liniowe skale na osiach układu współrzędnych słabo nadają się do przedstawienia tych danych. Użyć osi o skali logarytmicznej, tzn. przedstawić dane na wykresie typu log-log. Użyć na osiach znaczników będących potęgami 10.
+
+  Potrzebne funkcje: \texttt{scale\_x\_continuous(name, transform, breaks, labels)}, \texttt{scale\_y\_continuous()}.
+
+  Przydatne materiały: \url{https://ggplot2.tidyverse.org/reference/scale_continuous.html}
+
+  \item Dodać do powyzszego wykresu warstwę z linią trendu za pomocą funkcji \texttt{geom\_smooth()}
+
+  \item Dodać do punktów na wykresie etykiety opisujące do jakiego gatunku zwierzęcia odnosi się dany punkt. Wykres staje się nieczytelny - wybrać zatem losową próbkę 10 zwierząt i jedynie dla nich nanieść na wykres te etykiety.
+
+  Potrzebne funkcje: \texttt{geom\_text(, label)}, \texttt{rownames()}, \texttt{sample()}, \texttt{nrow()}
+  
+  Przydatne materiały:
+
+  \url{https://ggplot2.tidyverse.org/reference/geom_text.html}
+  
+  \url{https://stackoverflow.com/questions/62524965/how-to-label-only-certain-points-in-ggplot2}
+
+\end{enumerate}
+
+\newpage
+
+#### Rozwiązanie
+
+\begin{enumerate}[label=]
+  \item \(1.1.\) Utworzenie wykresu zależności masy mózgu od masy ciała.
+\end{enumerate}
+
+Instaluje pakiet \texttt{ggplot2} poprzez instalację pakietu \texttt{tidyverse} w całości, bowiem będzie on potrzebny w zadaniu 4.3.:
+\begin{verbatim}
+install.packages("tidyverse")
+\end{verbatim}
+
+Wczytanie danych:
+```{r}
+library(MASS)
+library(ggplot2)
+data(mammals, package = "MASS")
+```
+
+Utworzenie wykresu:
+```{r}
+ggplot(mammals, aes(x = body, y = brain)) +
+  geom_point(color = "blue") +
+  labs(
+    title = "Zależność masy mózgu od masy ciała ssaków",
+    x = "Masa ciała (kg)",
+    y = "Masa mózgu (g)"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(hjust = 0.5, margin = margin(b = 10)),
+    axis.title.x = element_text(margin = margin(t = 10)),
+    axis.title.y = element_text(margin = margin(r = 10))
+  )
+```
+
+\newpage
+
+\begin{enumerate}[label=]
+  \item \(1.2.\) Wykres typu log-log
+\end{enumerate}
+
+Tworzenie wykresu przy pomocy funkcji \texttt{scale\_x\_continuous()} i \texttt{scale\_y\_continuous()}:
+```{r}
+ggplot(mammals, aes(x = body, y = brain)) +
+  geom_point(color = "blue") +
+  scale_x_continuous(
+    name = "Masa ciała (kg)",
+    trans = "log10",
+    breaks = scales::trans_breaks("log10", function(x) 10^x),
+    labels = scales::trans_format("log10", scales::math_format(10^.x))
+  ) +
+  scale_y_continuous(
+    name = "Masa mózgu (g)",
+    trans = "log10",
+    breaks = scales::trans_breaks("log10", function(x) 10^x),
+    labels = scales::trans_format("log10", scales::math_format(10^.x))
+  ) +
+  labs(
+    title = "Zależność masy mózgu od masy ciała ssaków (log-log)"
+  ) +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5, margin = margin(b = 10)))
+```
+\newpage
+
+\begin{enumerate}[label=]
+  \item \(1.3.\) Dodanie linii trendu
+\end{enumerate}
+
+```{r}
+ggplot(mammals, aes(x = body, y = brain)) +
+  geom_point(color = "blue") +
+  scale_x_continuous(
+    name = "Masa ciała (kg)",
+    trans = "log10",
+    breaks = scales::trans_breaks("log10", function(x) 10^x),
+    labels = scales::trans_format("log10", scales::math_format(10^.x))
+  ) +
+  scale_y_continuous(
+    name = "Masa mózgu (g)",
+    trans = "log10",
+    breaks = scales::trans_breaks("log10", function(x) 10^x),
+    labels = scales::trans_format("log10", scales::math_format(10^.x))
+  ) +
+  geom_smooth(method = "lm", formula = y ~ x, color = "red", se = FALSE) +
+  labs(
+    title = "Zależność masy mózgu od masy ciała ssaków (log-log)"
+  ) +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5, margin = margin(b = 10)))
+```
+\newpage
+
+\begin{enumerate}[label=]
+  \item \(1.4.\) Dodanie etykiet z gatunkami zwierząt + losowa próbka 10 zwierząt
+\end{enumerate}
+\small
+```{r,}
+ggplot(mammals, aes(x = body, y = brain)) +
+  geom_point(color = "blue") +
+  geom_text(
+    aes(label = rownames(mammals)),
+    vjust = -0.5,
+    color = "goldenrod"
+  ) +
+  scale_x_continuous(
+    name = "Masa ciała (kg)",
+    trans = "log10",
+    breaks = scales::trans_breaks("log10", function(x) 10^x),
+    labels = scales::trans_format("log10", scales::math_format(10^.x))
+  ) +
+  scale_y_continuous(
+    name = "Masa mózgu (g)",
+    trans = "log10",
+    breaks = scales::trans_breaks("log10", function(x) 10^x),
+    labels = scales::trans_format("log10", scales::math_format(10^.x))
+  ) +
+  geom_smooth(method = "lm", formula = y ~ x, color = "red", se = FALSE) +
+  labs(
+    title = "Zależność masy mózgu od masy ciała ssaków (log-log)"
+  ) +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5, margin = margin(b = 10)))
+```
+\newpage
+
+Jak widać, wykres stał się nieczytelny, ponieważ jest na nim za dużo etykiet. Wylosujmy więc próbkę 10 zwierząt, dla których naniesiemy etykiety.
+
+Najpierw ustawiam \texttt{seed} na swój numer albumu w celu zachowania powtarzalności wyników:
+```{r}
+set.seed(151885)
+```
+Następnie losuję próbkę 10 zwierząt i tworzę nowy data frame z tymi zwierzętami:
+```{r}
+sampled_indices <- sample(1:nrow(mammals), 10)
+sampled_mammals <- mammals[sampled_indices, ]
+```
+\newpage
+Wykorzystując powyższą próbkę, nanosze etykiety na wykres:
+\small
+```{r,}
+ggplot(mammals, aes(x = body, y = brain)) +
+  geom_point(color = "blue") +
+  geom_text(
+    data = sampled_mammals,
+    aes(label = rownames(sampled_mammals)),
+    vjust = -0.5,
+    color = "goldenrod"
+  ) +
+  scale_x_continuous(
+    name = "Masa ciała (kg)",
+    trans = "log10",
+    breaks = scales::trans_breaks("log10", function(x) 10^x),
+    labels = scales::trans_format("log10", scales::math_format(10^.x))
+  ) +
+  scale_y_continuous(
+    name = "Masa mózgu (g)",
+    trans = "log10",
+    breaks = scales::trans_breaks("log10", function(x) 10^x),
+    labels = scales::trans_format("log10", scales::math_format(10^.x))
+  ) +
+  geom_smooth(method = "lm", formula = y ~ x, color = "red", se = FALSE) +
+  labs(
+    title = "Zależność masy mózgu od masy ciała ssaków (log-log)"
+  ) +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5, margin = margin(b = 10)))
+```
+\newpage
+
+## Zadanie 2 - Statystyki i geometrie w ggplot2
+#### Treść
+
+\begin{enumerate}[label=2.\arabic*]
+  \item Z biblioteki MASS otworzyć zestaw danych \texttt{survey}.  Przedstawić na wykresie z pakietu ggplot2 zależność rozpiętości dłoni używanej do pisania od rozpiętości drugiej dłoni dla studentów badanych w tej ankiecie.
+  \begin{enumerate}[label=\alph*)]
+    \item Użyć wykresu punktowego.
+    \item Użyć wykresu z linią trendu.
+  \end{enumerate}
+  
+  Potrzebne funkcje: \texttt{ggplot(, aes(color, shape))}.
+
+  \item Przypomnieć sobie, jak na jednych z minionych zajęć konstruowaliśmy wykresy pudełkowe (boxplot) dla wzrostu mężczyzn i kobiet z University of Adelaide. Niestety na ten wykres nie można było nanieść punktów odnoszących się do poszczególnych osób. Osięgnąć ten cel dzięki pakietowi \texttt{ggplot2}. Wykorzystać funkcje \texttt{stat\_boxplot()} i \texttt{geom\_jitter()}.
+
+  \item Przedstawić wykres słupkowy liczby studentów niepalących/palących okazjonalnie/regularnie/nałogowo. Słupki są porządkowane przez R alfabetycznie – uporządkować je w powyższej (logicznej) kolejności.
+
+  Potrzebne funkcje: \texttt{geom\_bar()}, \texttt{factor()}.
+  
+  Przydatne materiały:
+
+  \url{https://guslipkin.medium.com/reordering-bar-and-column-charts-with-ggplot2-in-r-435fad1c643e}
+
+  \item Przedstawić zależność zmierzonego pulsu od deklarowanego statusu palenia papierosów na wykresach typu \texttt{geom\_violin()} oraz \texttt{geom\_dotplot()}
+
+  \item Przedstawić związek pulsu ze wzrostem na wykresach z poziomicami gęstości rozkładu \texttt{geom\_density\_2d} oraz \texttt{geom\_density\_2d\_filled}. Wykonać te wykresy osobno dla mężczyzn i dla kobiet.
+
+  Przydatne materiały: 
+  
+  \url{https://r-charts.com/correlation/contour-plot-ggplot2/?utm_content=cmp-true}
+\end{enumerate}
+
+#### Rozwiązanie
+
+\begin{enumerate}[label=]
+  \item \(2.1.\) Wykres porównujący rozpiętości dłoni 
+\end{enumerate}
+
+Wczytanie danych:
+```{r}
+library(MASS)
+library(ggplot2)
+data(survey, package = "MASS")
+```
+
+Wyczyszczenie nieprawidłowych wartości rozpiętości dłoni:
+```{r}
+survey_clean <- na.omit(survey[, c("Wr.Hnd", "NW.Hnd")])
+```
+
+\newpage
+
+\begin{enumerate}[label=]
+  \item \texttt{a)} Wykres punktowy
+\end{enumerate}
+```{r}
+ggplot(survey_clean, aes(x = Wr.Hnd, y = NW.Hnd)) +
+  geom_point(color = "blue") +
+  labs(
+    title = "Zależność rozpiętości dłoni używanej do pisania od drugiej dłoni",
+    x = "Rozpiętość dłoni używanej do pisania (cm)",
+    y = "Rozpiętość drugiej dłoni (cm)"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(hjust = 0.5, margin = margin(b = 10)),
+    axis.title.x = element_text(margin = margin(t = 10)),
+    axis.title.y = element_text(margin = margin(r = 10))
+  )
+```
+
+\newpage
+
+\begin{enumerate}[label=]
+  \item \texttt{b)} Wykres z linią trendu
+\end{enumerate}
+```{r}
+ggplot(survey_clean, aes(x = Wr.Hnd, y = NW.Hnd)) +
+  geom_point(color = "blue") +
+  geom_smooth(method = "lm", formula = y ~ x, color = "red", se = FALSE) +
+  labs(
+    title = "Zależność rozpiętości dłoni z linią trendu",
+    x = "Rozpiętość dłoni używanej do pisania (cm)",
+    y = "Rozpiętość drugiej dłoni (cm)"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(hjust = 0.5, margin = margin(b = 10)),
+    axis.title.x = element_text(margin = margin(t = 10)),
+    axis.title.y = element_text(margin = margin(r = 10))
+  )
+```
+
+
+\newpage
+
+\begin{enumerate}[label=]
+  \item \(2.2.\) Boxplot dla wzrostu mężczyzn i kobiet z Uniwersytetu Adelaide
+\end{enumerate}
+
+Dla przypomnienia, tak wyglądał wykres pudełkowy z zajęć laboratoryjnych numer 1:
+```{r}
+boxplot(
+  survey$Height ~ survey$Sex,
+  main = "Wzrost osoby studenckiej według płci",
+  xlab = "Płeć",
+  ylab = "Wzrost",
+  col = c("pink", "blue")
+)
+```
+
+Teraz wyfiltrujmy dane, aby pozbyć się nieprawidłowych wartości:
+```{r}
+survey_clean_height <- na.omit(survey[, c("Sex", "Height")])
+```
+\newpage
+Dzięki pakietowi \texttt{ggplot2} możemy dodać punkty do wykresu pudełkowego:
+
+```{r}
+ggplot(survey_clean_height, aes(x = Sex, y = Height, fill = Sex)) +
+  stat_boxplot(geom = "errorbar", width = 0.2) +
+  geom_boxplot(outlier.shape = NA, alpha = 0.5) +
+  geom_jitter(aes(color = Sex), width = 0.2, alpha = 0.7) +
+  labs(
+    title = "Wzrost studentów według płci",
+    x = "Płeć",
+    y = "Wzrost (cm)",
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(hjust = 0.5, margin = margin(b = 10)),
+    axis.title.x = element_text(margin = margin(t = 10)),
+    axis.title.y = element_text(margin = margin(r = 10))
+  )
+```
+\newpage
+
+\begin{enumerate}[label=]
+  \item \(2.3.\) Wykres słupkowy liczby studentów niepalących/palących okazjonalnie/regularnie/nałogowo
+\end{enumerate}
+
+Wyfiltrujmy dane, aby pozbyć się nieprawidłowych wartości:
+```{r}
+survey_clean_smoking <- na.omit(data.frame(Smoke = survey$Smoke))
+```
+
+Uporządkowanie poziomów palenia w odpowiedniej kolejności:
+```{r}
+survey_clean_smoking$Smoke <- factor(
+  survey_clean_smoking$Smoke,
+  levels = c("Never", "Occas", "Regul", "Heavy")
+)
+```
+\newpage
+Utworzenie wykresu:
+```{r}
+ggplot(survey_clean_smoking, aes(x = Smoke, fill = Smoke)) +
+  geom_bar() +
+  scale_fill_manual(
+    values = c("springgreen4", "red", "firebrick", "darkred")
+  ) +
+  labs(
+    title = "Liczba studentów według częstotliwości palenia",
+    x = "Częstotliwość palenia",
+    y = "Liczba studentów",
+    fill = "Częstotliwość palenia"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(hjust = 0.5),
+    axis.title.x = element_text(margin = margin(t = 10)),
+    axis.title.y = element_text(margin = margin(r = 10))
+  )
+```
+
+\newpage
+
+\begin{enumerate}[label=]
+  \item \(2.4.\) Zależność zmierzonego pulsu od statusu palenia papierosów
+\end{enumerate}
+
+Wyfiltrujmy dane, aby pozbyć się nieprawidłowych wartości:
+```{r}
+survey_clean_pulse <- na.omit(survey[, c("Pulse", "Smoke")])
+```
+
+Uporządkowanie częstotliwości palenia w odpowiedniej kolejności:
+```{r}
+survey_clean_pulse$Smoke <- factor(
+  survey_clean_pulse$Smoke,
+  levels = c("Never", "Occas", "Regul", "Heavy")
+)
+```
+\newpage
+
+\begin{enumerate}[label=]
+  \item \texttt{a)} Wykres typu violin plot (skrzypcowy)
+\end{enumerate}
+```{r}
+ggplot(survey_clean_pulse, aes(x = Smoke, y = Pulse, fill = Smoke)) +
+  geom_violin(trim = FALSE, alpha = 0.7) +
+  scale_fill_manual(
+    values = c("springgreen4", "red", "firebrick", "darkred")
+  ) +
+  labs(
+    title = "Rozkład zmierzonego pulsu według częstotliwości palenia",
+    x = "Częstotliwość palenia",
+    y = "Zmierzone tętno (bpm)",
+    fill = "Częstotliwość palenia"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(hjust = 0.5),
+    axis.title.x = element_text(margin = margin(t = 10)),
+    axis.title.y = element_text(margin = margin(r = 10))
+  )
+```
+\newpage
+
+\begin{enumerate}[label=]
+  \item \texttt{b)} Wykres typu dotplot (stacked dotted plot)
+\end{enumerate}
+```{r}
+ggplot(survey_clean_pulse, aes(x = Smoke, y = Pulse, fill = Smoke)) +
+  geom_dotplot(binaxis = "y", stackdir = "center", dotsize = 0.5, binwidth = 2) +
+  scale_fill_manual(
+    values = c("springgreen4", "red", "firebrick", "darkred")
+  ) +
+  labs(
+    title = "Rozkład zmierzonego pulsu według częstotliwości palenia (dotplot)",
+    x = "Częstotliwość palenia",
+    y = "Zmierzone tętno (bpm)",
+    fill = "Częstotliwość palenia"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(hjust = 0.5, size = 10),
+    axis.title.x = element_text(margin = margin(t = 10)),
+    axis.title.y = element_text(margin = margin(r = 10)),
+    legend.title = element_text(size = 10),
+    legend.text = element_text(size = 8)
+  )
+```
+\newpage
+
+\begin{enumerate}[label=]
+  \item \(2.5.\) Związek pulsu ze wzrostem na wykresach z poziomicami gęstości rozkładu
+\end{enumerate}
+
+Wyfiltrujmy dane, aby pozbyć się nieprawidłowych wartości:
+```{r}
+survey_clean_height_pulse <- na.omit(survey[, c("Height", "Pulse", "Sex")])
+```
+
+Deklaracja funkcji wyświetlającej wykres z \texttt{geom\_density\_2d}:
+```{r}
+plot_height_pulse_density <- function(sex, color) {
+  ggplot(
+    subset(survey_clean_height_pulse, Sex == sex),
+    aes(x = Height, y = Pulse)
+  ) +
+    geom_density_2d(color = color) +
+    labs(
+      title = paste("Poziomice gęstości rozkładu pulsu i wzrostu (", sex, ")", sep = ""),
+      x = "Wzrost (cm)",
+      y = "Puls (bpm)"
+    ) +
+    theme_minimal() +
+    theme(
+      plot.title = element_text(hjust = 0.5),
+      axis.title.x = element_text(margin = margin(t = 10)),
+      axis.title.y = element_text(margin = margin(r = 10))
+    )
+}
+```
+
+Deklaracja funkcji wyświetlającej wykres z \texttt{geom\_density\_2d\_filled}:
+```{r}
+plot_height_pulse_density_filled <- function(sex) {
+  ggplot(
+    subset(survey_clean_height_pulse, Sex == sex),
+    aes(x = Height, y = Pulse)
+  ) +
+    geom_density_2d_filled(alpha = 0.7) +
+    scale_fill_viridis_d() +
+    labs(
+      title = paste("Poziomice gęstości rozkładu pulsu i wzrostu (", sex, ")", sep = ""),
+      x = "Wzrost (cm)",
+      y = "Puls (bpm)",
+      fill = "Gęstość"
+    ) +
+    theme_minimal() +
+    theme(
+      plot.title = element_text(hjust = 0.5),
+      axis.title.x = element_text(margin = margin(t = 10)),
+      axis.title.y = element_text(margin = margin(r = 10))
+    )
+}
+```
+
+\newpage
+
+\begin{enumerate}[label=]
+  \item Wyświetlenie wykresów dla kobiet
+\end{enumerate}
+
+```{r}
+plot_height_pulse_density_filled("Female")
+```
+\newpage
+```{r}
+plot_height_pulse_density("Female", "pink")
+```
+\newpage
+
+\begin{enumerate}[label=]
+  \item Wyświetlenie wykresów dla mężczyzn
+\end{enumerate}
+
+```{r}
+plot_height_pulse_density_filled("Male")
+```
+\newpage
+```{r}
+plot_height_pulse_density("Male", "blue")
+```
+\newpage
+
+## Zadanie 3 - Statystyki i geometrie w ggplot2
+#### Treść
+
+\begin{enumerate}[label=3.\arabic*]
+  \item Ze strony \url{https://github.com/bnokoro/Data-Science/blob/master/countries%20of%20the%20world.csv} pobrać plik countries of the world.csv i zapisać go w R jako data frame countries. Uprościć nagłówki kolumn, aby łatwiej było się nimi później posługiwać.
+
+  \item Przedstawić na wykresie z pakietu \texttt{ggplot2} zależność piśmienności (oś pionowa) od PKB per capita (oś pozioma) dla wszystkich zawartych w tym data frame państw. Wynikiem tej części zadania powinien być wykres podobny do przedstawionego na Rys. 1, na którego poszczególnych panelach punkty odpowiadające wybranemu regionowi świata oznaczone są większymi czerwonymi kropkami, a te odnoszące się do reszty świata mniejszymi szarymi.
+
+  Potrzebne funkcje: \texttt{facet\_wrap()}, \texttt{geom\_point(size, color)}
+
+  Przydatne materiały:
+
+  \url{https://pbiecek.github.io/Przewodnik/Wizualizacja/ggplot2/06_panele.html}
+  
+  \begin{figure}[H]
+  \centering
+  \includegraphics[width=0.8\textwidth]{rys1.png}
+  \label{fig:rys1}
+  \end{figure}
+
+  \item W podobny sposób przedstawić zależność wypadkowej migracji od gęstości zaludnienia. Użyć skali logarytmicznej dla gęstości zaludnienia.
+\end{enumerate}
+
+\newpage
+
+#### Rozwiązanie
+
+\begin{enumerate}[label=]
+  \item \(3.1.\) Wczytanie danych
+\end{enumerate}
+
+Pobranie pliku z danymi:
+```{r}
+url <- "https://github.com/bnokoro/Data-Science/raw/master/countries%20of%20the%20world.csv"
+download.file(url, destfile = "countries_of_the_world.csv", mode = "wb")
+```
+Wczytanie danych do R:
+```{r}
+countries <- read.csv("countries_of_the_world.csv", stringsAsFactors = FALSE)
+```
+Uproszczenie nagłówków kolumn:
+```{r}
+colnames(countries) <- gsub(" ", "_", colnames(countries))
+colnames(countries) <- gsub("\\.", "", colnames(countries))
+colnames(countries) <- tolower(colnames(countries))
+```
+
+Wyświetlenie pierwszy 5 wierszy:
+```{r}
+head(countries, 5)
+```
+\newpage
+
+\begin{enumerate}[label=]
+  \item \(3.2.\) Wyświetlenie wykresu zależności piśmienności od PKB per capita
+\end{enumerate}
+
+Czyszczenie danych:
+```{r, message=FALSE, warning=FALSE}
+library(dplyr)
+library(scales)
+
+countries$gdppercapita <- as.numeric(gsub(",", ".", countries$gdppercapita))
+countries$literacy <- as.numeric(gsub(",", ".", countries$literacy))
+countries_clean <- na.omit(countries[, c("gdppercapita", "region", "literacy")])
+```
+Tworzenie nowego dataframe - każdy punkt pojawi się w każdym panelu:
+```{r}
+all_regions <- unique(countries_clean$region)
+plot_data <- expand.grid(facet_region = all_regions, id = 1:nrow(countries_clean)) %>%
+  mutate(
+    gdppercapita = countries_clean$gdppercapita[id],
+    literacy = countries_clean$literacy[id],
+    region = countries_clean$region[id],
+    highlight = region == facet_region
+  )
+```
+\newpage
+Wyświetlenie wykresu:
+```{r}
+ggplot(plot_data, aes(x = gdppercapita, y = literacy)) +
+  geom_point(data = subset(plot_data, !highlight), color = "grey80", size = 0.05) +
+  geom_point(data = subset(plot_data, highlight), color = "red", size = 0.05) +
+  facet_wrap(~ facet_region, scales = "fixed", ncol = 4) +
+  scale_x_continuous(labels = comma) +
+  scale_y_continuous(limits = c(0, 100)) +
+  labs(
+    title = "Zależność piśmienności od PKB per capita",
+    x = "PKB per capita",
+    y = "Piśmienność (%)"
+  ) +
+  theme_gray() +
+  theme(
+    plot.title = element_text(hjust = 0.5, size = 14),
+    axis.title = element_text(size = 10),
+    axis.text = element_text(size = 6, margin = margin(r = 6)),
+    strip.text = element_text(size = 4),
+    strip.placement = "inside",
+    strip.background = element_rect(fill = "grey90", color = NA),
+    panel.grid.major = element_line(color = "grey85"),
+    panel.spacing = unit(1.2, "lines"),
+    axis.title.y = element_text(margin = margin(r = 6)),
+    axis.title.x = element_text(margin = margin(t = 6))
+  )
+```
+\newpage
+
+\begin{enumerate}[label=]
+  \item \(3.2.\) Wyświetlenie wykresu zależności wypadkowej migracji od zaludnienia
+\end{enumerate}
+
+Czyszczenie danych:
+```{r, message=FALSE, warning=FALSE}
+countries$netmigration <- as.numeric(gsub(",", ".", countries$netmigration))
+countries$popdensitypersqmi <- as.numeric(gsub(",", ".", countries$popdensitypersqmi))
+countries$region <- as.factor(countries$region)
+countries_migration <- na.omit(countries[, c("popdensitypersqmi", "netmigration", "region")])
+```
+
+Tworzenie nowego dataframe - każdy punkt pojawi się w każdym panelu:
+```{r}
+all_regions <- unique(countries_migration$region)
+plot_data <- expand.grid(facet_region = all_regions, id = 1:nrow(countries_migration)) %>%
+  mutate(
+    netmigration = countries_migration$netmigration[id],
+    popdensitypersqmi = countries_migration$popdensitypersqmi[id],
+    region = countries_migration$region[id],
+    highlight = region == facet_region
+  )
+```
+\newpage
+
+Wyświetlenie wykresu:
+```{r, warning=FALSE}
+ggplot(plot_data, aes(x = popdensitypersqmi, y = netmigration)) +
+  geom_point(data = subset(plot_data, !highlight), color = "grey80", size = 0.05) +
+  geom_point(data = subset(plot_data, highlight), color = "blue", size = 0.05) +
+  facet_wrap(~ facet_region, scales = "fixed", ncol = 4) +
+  scale_x_log10(labels = comma) +
+  scale_y_continuous() +
+  labs(
+    title = "Wypadkowa migracji a gęstość zaludnienia",
+    x = "Gęstość zaludnienia (osoby/mi², skala log)",
+    y = "Wypadkowa migracji"
+  ) +
+  theme_gray() +
+  theme(
+    plot.title = element_text(hjust = 0.5, size = 14),
+    axis.title = element_text(size = 10),
+    axis.text = element_text(size = 6, margin = margin(r = 6)),
+    strip.text = element_text(size = 4),
+    strip.placement = "inside",
+    strip.background = element_rect(fill = "grey90", color = NA),
+    panel.grid.major = element_line(color = "grey85"),
+    panel.spacing = unit(1.2, "lines"),
+    axis.title.y = element_text(margin = margin(r = 6)),
+    axis.title.x = element_text(margin = margin(t = 6))
+  )
+```
+
+\newpage
+
+## Zadanie 4 - "Długi" format danych
+#### Treść
+
+\begin{enumerate}[label=4.\arabic*]
+  \item Sprawdzić w R działanie linii kodu: 
+  \begin{verbatim}
+  1000 %>% rnorm(mean = 0, sd = 5) %>% hist(breaks = 20)
+  \end{verbatim}
+  Jakie jest znaczenie operatora \texttt{\%>\%}?
+
+  \item Za pomocą funkcji \texttt{data.frame()} skonstruować "ręcznie" następujący data frame:
+  
+  \begin{figure}[H]
+  \centering
+  \includegraphics[width=0.4\textwidth]{dataframe.png}
+  \label{fig:dataframe}
+  \end{figure}
+
+  \item Zainstalować pakiet tidyverse (\texttt{install.packages("tidyverse")}). Korzystając z funkcji \texttt{pivot\_longer()} tego pakietu przekształcić powyszy dataframe do postaci:
+  
+  \begin{figure}[H]
+  \centering
+  \includegraphics[width=0.4\textwidth]{dataframe2.png}
+  \label{fig:dataframe2}
+  \end{figure}
+
+
+\end{enumerate}
+\newpage
+#### Rozwiązanie
+
+\begin{enumerate}[label=]
+  \item \(4.1.\) Znaczenie operatora \texttt{\%>\%}
+\end{enumerate}
+
+```{r}
+1000 %>% rnorm(mean = 0, sd = 5) %>% hist(breaks = 20)
+```
+
+Operator \texttt{\%>\%} jest operatorem pipe, który pozwala na przekazywanie wyniku jednej funkcji jako argumentu do następnej funkcji. W tym przypadku, generuje 1000 losowych liczb z rozkładu normalnego o średniej 0 i odchyleniu standardowym 5, a następnie tworzy histogram tych danych z 20 przedziałami.
+
+Przykładowym odpowiednikiem tego operatora będzie np. operator \texttt{|} (pipe) w bashu.
+
+\newpage
+
+\begin{enumerate}[label=]
+  \item \(4.2.\) Konstrukcja dataframe - pokarm, węglowodany, białko, tłuszcz
+\end{enumerate}
+
+```{r}
+food_df <- data.frame(
+  pokarm = c("chleb", "jabłko", "szynka"),
+  weglowodany = c(49, 14, 1.5),
+  bialko = c(9, 0.3, 21),
+  tluszcz = c(3.2, 0.2, 6)
+)
+food_df
+```
+
+\begin{enumerate}[label=]
+  \item \(4.2.\) Przekształcenie dataframe
+\end{enumerate}
+
+```{r, warning=FALSE, message=FALSE}
+library(tidyverse)
+
+food_pivoted <- pivot_longer(
+  food_df,
+  cols = c(weglowodany, bialko, tluszcz),
+  names_to = "wart_odzywcza",
+  values_to = "zawartosc"
+)
+food_pivoted
+```
+
+
+\newpage
+
+## Zadanie 5
+#### Treść
+
+\begin{enumerate}[label=]
+  \item Przedstawić na wykresie słupkowym udział rolnictwa/przemysłu/usług w gospodarce poszczególnych krajów Europy Wschodniej, tak, jak przedstawiono to na Rys. 2.
+
+  \item Przydatne materiały
+
+  \url{https://stackoverflow.com/questions/71359655/how-to-create-a-stacked-bar-chart-in-r-with-ggplot}
+
+  \begin{figure}[H]
+  \centering
+  \includegraphics[width=0.8\textwidth]{rys2.png}
+  \label{fig:rys2}
+  \end{figure}
+\end{enumerate}
+
+#### Rozwiązanie
+
+Czyszczenie danych:
+```{r, message=FALSE, warning=FALSE}
+countries$agriculture <- as.numeric(gsub(",", ".", countries$agriculture))
+countries$industry <- as.numeric(gsub(",", ".", countries$industry))
+countries$service <- as.numeric(gsub(",", ".", countries$service))
+countries$country <- as.factor(countries$country)
+countries$region <- as.factor(countries$region)
+countries_sectors <- na.omit(countries[, c(
+  "agriculture", "industry", "service",
+  "country", "region"
+)])
+```
+
+Wybranie krajów Europy Wschodniej:
+```{r, message=FALSE, warning=FALSE}
+eastern_europe_sectors <- countries_sectors[
+  grepl(
+    "eastern europe",
+    countries_sectors$region,
+    ignore.case = TRUE
+  ),
+]
+```
+
+Przekształcenie do formatu długiego + przemnożenie przez 100:
+```{r}
+eastern_europe_sectors_long <- pivot_longer(
+  eastern_europe_sectors,
+  cols = c(agriculture, industry, service),
+  names_to = "sektor",
+  values_to = "udzial"
+) %>%
+  mutate(udzial = udzial * 100)
+```
+
+Wyświetlenie wykresu:
+```{r}
+ggplot(eastern_europe_sectors_long, aes(x = country, y = udzial, fill = sektor)) +
+  geom_bar(stat = "identity") +
+  scale_fill_manual(values = c("forestgreen", "goldenrod", "steelblue")) +
+  labs(
+    title = "Udział sektorów w gospodarce krajów Europy Wschodniej",
+    x = "Kraj",
+    y = "Udział (%)",
+    fill = "Sektor"
+  ) +
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    plot.title = element_text(hjust = 0.5)
+  )
+```
+\newpage
+
+## Zadanie 6
+#### Treść
+
+\begin{enumerate}[label=]
+  \item Przedstawić te dane na wykresach kołowych osobnych dla każdego z analizowanych krajów.
+
+  \item Przydatne materiały
+
+  \url{https://r-graph-gallery.com/piechart-ggplot2.html}
+
+\end{enumerate}
+
+\newpage
+
+#### Rozwiązanie
+
+\begin{enumerate}[label=]
+  \item Wyświetlenie wykresów:
+\end{enumerate}
+```{r}
+ggplot(eastern_europe_sectors_long, aes(x = "", y = udzial, fill = sektor)) +
+  geom_bar(stat = "identity", width = 1, color = "white") +
+  coord_polar("y") +
+  facet_wrap(~ country, ncol = 4) +
+  scale_fill_manual(values = c("forestgreen", "goldenrod", "steelblue")) +
+  labs(
+    title = "Sektory gospodarki krajów Europy Wschodniej",
+    fill = "Sektor"
+  ) +
+  theme_void() +
+  theme(
+    plot.title = element_text(hjust = 0.5, size = 10, margin = margin(b = 10)),
+    strip.text = element_text(size = 8),
+    legend.position = "bottom"
+  )
+```
