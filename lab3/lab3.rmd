@@ -1,0 +1,722 @@
+---
+title: "Laboratorium 3"
+subtitle: "Wstęp do Analizy Danych | Politechnika Krakowska"
+author: "Jakub Kapała"
+output: 
+  pdf_document:
+    latex_engine: xelatex
+header-includes: |
+  \usepackage{fancyhdr}
+  \usepackage{float}
+  \usepackage{enumitem}
+  \pagestyle{fancy}
+  \fancyhead[L]{\textbf{WdAD - Sprawozdanie - Laboratorium 3}}
+  \fancyhead[R]{\textbf{Jakub Kapała}}
+---
+
+```{r setup, include=FALSE}
+library(Cairo)
+knitr::opts_chunk$set(dev = "CairoPDF", echo = TRUE)
+Sys.setlocale("LC_CTYPE", "pl_PL.UTF-8")
+```
+\begin{center}
+{\small Numer albumu: 151885} \\[0.1cm]
+{\small Data: `r format(Sys.time(), '%d.%m.%Y')`}
+\end{center}
+\newpage
+## Zadanie 1 - Plamy  słoneczne
+#### Treść
+
+\begin{enumerate}[label=1.\arabic*]
+  \item Ze strony Royal Observatory of Belgium pobrać dane dotyczące liczby plam słonecznych. 
+  Użyć polecenia \texttt{read.csv}, aby wczytać dane do R. 
+  Link do danych: \url{https://www.sidc.be/SILSO/datafiles}  
+  Bezpośredni link do pliku .csv z danymi: \url{http://www.sidc.be/SILSO/INFO/sndtotcsv.php}
+
+  \item Użyć funkcji \texttt{colnames}, aby nadać pobranemu data frame wygodne nazwy kolumn – sprawdzić w tym celu na podanej stronie internetowej znaczenie liczb w poszczególnych kolumnach. 
+  Jaka była największa zarejestrowana kiedykolwiek liczba plam na Słońcu? Kiedy miało to miejsce?
+
+  \item Przedstawić na wykresie liczbę plam słonecznych w funkcji czasu w latach 1990 - 2023.
+
+  \item Powyższy wykres jest bardzo nieciągły – liczba plam na Słońcu zmienia się chaotycznie w krótkim czasie. 
+  Znaleźć i przedstawić na wykresie zależność czasową liczby plam na Słońcu \textit{uśrednioną w skali roku}, tzn. średnią arytmetyczną z dni od 182 dni przed do 182 dni po danym dniu.
+
+  \item Przedstawić na wykresie liczbę plam słonecznych od stycznia do maja 2023.
+
+  \item Na tak krótkim przedziale czasu chaotyczne zmiany dominują nad długofalowym trendem i można oczekiwać, że rozkład liczby plam słonecznych jest przynajmniej w pewnym przybliżeniu normalny. 
+  Przedstawić histogram liczby plam od stycznia do maja 2023, znaleźć średnią liczbę plam i odchylenie standardowe oraz zbadać normalność rozkładu na wykresie kwantyl-kwantyl (polecenie \texttt{qqnorm}).
+\end{enumerate}
+
+#### Rozwiązanie
+
+\(1.1.\) Wczytanie danych:
+```{r sunspots-data, echo=TRUE}
+# Pobranie danych z podanego linku
+url <- "http://www.sidc.be/SILSO/INFO/sndtotcsv.php"
+
+# Wczytanie danych do R
+sunspots_data <- read.csv(url, header = FALSE, sep = ";")
+
+# Wyswietlenie pierwszych kilku wierszy danych
+head(sunspots_data)
+```
+\newpage
+\(1.2.\): Nadanie nazwy kolumnom, analiza największej liczby plam słonecznych.
+
+Nadanie nazw kolumnom:
+```{r, echo=TRUE}
+
+colnames(sunspots_data) <- c(
+  "Year",
+  "Month",
+  "Day",
+  "Date_In_Fraction_Of_Year",
+  "Daily_Total_Sunspot_Number",
+  "Daily_Standard_Deviation",
+  "Daily_Observations",
+  "Definitive_Provisional_Indicator"
+)
+head(sunspots_data)
+```
+
+Znalezienie największej liczby plam na słońcu:
+```{r}
+max_sunspots <- max(sunspots_data$Daily_Total_Sunspot_Number, na.rm = TRUE)
+max_sunspots
+```
+Znalezienie daty kiedy miało to miejsce:
+```{r}
+max_sunspots_row <- sunspots_data[
+  sunspots_data$Daily_Total_Sunspot_Number == max_sunspots,
+]
+max_sunspots_date <- paste(
+  max_sunspots_row$Day,
+  max_sunspots_row$Month,
+  max_sunspots_row$Year,
+  sep = "."
+)
+max_sunspots_date
+```
+
+\newpage
+\(1.3.\) Wyświetlenie wykresu liczby plam słonecznych w funkcji czasu w latach \(1990 - 2023\):
+```{r}
+plot(
+  sunspots_data$Date_In_Fraction_Of_Year[sunspots_data$Year >= 1990],
+  sunspots_data$Daily_Total_Sunspot_Number[sunspots_data$Year >= 1990],
+  type = "l",
+  xlab = "Rok",
+  ylab = "Liczba plam słonecznych",
+  main = "Liczba plam słonecznych w latach 1990 - 2023",
+  col = "blue",
+)
+```
+\newpage
+\(1.4.\) Uśrednienie liczby plam słonecznych w skali roku
+
+Deklaracja funkcji do obliczania średniej kroczącej:
+```{r}
+moving_average <- function(x, n) {
+  result <- rep(NA, length(x))
+  for (i in seq_along(x)) {
+    start <- max(1, i - floor(n / 2))
+    end <- min(length(x), i + floor(n / 2))
+    result[i] <- mean(x[start:end], na.rm = TRUE)
+  }
+  return(result)
+}
+```
+Obliczenie średniej kroczącej dla liczby plam słonecznych:
+```{r}
+sunspots_data$Yearly_Avg_Sunspots <- moving_average(
+  sunspots_data$Daily_Total_Sunspot_Number,
+  n = 365
+)
+```
+\newpage
+Wyświetlenie wykresu:
+```{r}
+# Wykres liczby plam słonecznych uśrednionej w skali roku
+plot(
+  sunspots_data$Date_In_Fraction_Of_Year,
+  sunspots_data$Yearly_Avg_Sunspots,
+  type = "l",
+  xlab = "Rok",
+  ylab = "Liczba plam słonecznych",
+  main = "Średnia liczba plam słonecznych w skali roku",
+  col = "red"
+)
+```
+\newpage
+\(1.5.\) Wykres liczby plam słonecznych od stycznia do maja 2023:
+```{r}
+plot(
+  sunspots_data$Date_In_Fraction_Of_Year[
+    sunspots_data$Year == 2023 &
+    sunspots_data$Month <= 5
+  ],
+  sunspots_data$Daily_Total_Sunspot_Number[
+    sunspots_data$Year == 2023 &
+    sunspots_data$Month <= 5
+  ],
+  type = "l",
+  xlab = "Miesiąc",
+  ylab = "Liczba plam słonecznych",
+  main = "Liczba plam słonecznych od stycznia do maja 2023",
+  col = "blue",
+  xaxt = "n"
+)
+axis(
+  side = 1,
+  at = seq(2023.0, 2023.4, by = 0.1),
+  labels = c("Styczeń", "Luty", "Marzec", "Kwiecień", "Maj")
+)
+```
+\newpage
+\(1.6.\) Analiza danych z wykresu z punktu 1.5.
+
+Pobieram podzbiór danych zawierający liczbę plam słonecznych w styczniu-maju 2023:
+```{r}
+subset <- sunspots_data[
+  sunspots_data$Year == 2023 &
+  sunspots_data$Month <= 5,
+  "Daily_Total_Sunspot_Number"
+]
+```
+Wyświetlenie histogramu:
+```{r}
+hist(
+  subset,
+  breaks = 20,
+  main = "Histogram liczby plam słonecznych (styczeń-maj 2023)",
+  xlab = "Liczba plam słonecznych",
+  ylab = "Częstość",
+  col = "blue",
+)
+```
+\newpage
+Obliczenie średniej i odchylenia standardowego:
+```{r}
+mean_sunspots <- mean(subset, na.rm = TRUE)
+mean_sunspots
+```
+```{r}
+sd_sunspots <- sd(subset, na.rm = TRUE)
+sd_sunspots
+```
+Wyświetlenie wykresu kwantyl-kwantyl:
+```{r}
+qqnorm(subset, main = "Wykres kwantyl-kwantyl (styczeń-maj 2023)",
+  xlab = "Kwantyle teoretyczne", ylab = "Kwantyle empiryczne")
+qqline(subset, col = "red")
+```
+\newpage
+
+## Zadanie 2 - Przedziały ufności i metoda bootstrap
+#### Treść
+
+\begin{enumerate}[label=2.\arabic*]
+  \item Z biblioteki MASS otworzyć zestaw danych cabbages. Ograniczyć data frame do danych 
+odnoszących się wyłącznie do kapusty gatunku ”c39” zasadzonej w dniu ”d16”. Przedstawić 
+histogram mas okazów kapusty.
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.8\textwidth]{rys1.png}
+\caption{Źródło: \url{https://en.wikipedia.org/wiki/Bootstrapping} (statistics), autor: MM-Stat, Biggerj1.}
+\label{fig:bootstrap}
+\end{figure}
+
+  \item Znaleźć średnią, odchylenie standardowe i błąd standardowy średniej dla kapusty "c39"
+zasadzonej dnia "d16". Określić przedziały ufności \(90\%\) i \(95\%\) (użyć rozkładu \(t\)-Studenta, ponieważ liczba próbek \(< 30\), polecenie \texttt{qt()}). Porównać wynik obliczeń z wartością zwracaną przez 
+funkcję \texttt{t.test}. Przedstawić masy kapust na wykresie kwantyl-kwantyl.
+
+\item Niewielka ilość danych, w oparciu o które znajdujemy średnią, jak i wątpliwa normalność 
+rozkładu skłania do znalezienia dokładniejszej metody. Użyć metody bootstrap, aby wyznaczyć 
+przedziały ufności \(90\%\) i \(95\%\). 
+\begin{enumerate}[label*=.\arabic*.]
+  \item Z naszej próbki kapust o rozmiarze \(10\) wylosować nową próbkę, ze zwracaniem, również 
+  o rozmiarze \(10\) (funkcja \texttt{sample}). 
+  \item Znaleźć średnią dla tej próbki i zapisać ją. 
+  \item Powtórzyć kroki 1-2 tysiąc razy. 
+  \item Dla przedziału ufności \(90\%\) będziemy używać percentyla \(5\%\) zestawu średnich znalezionych w pkcie 2. jako dolną granicę przedziału ufności oraz percentyla \(95\%\) jako górną granicę. Określić przedziały ufności \(90\%\) i \(95\%\).
+\end{enumerate}
+\end{enumerate}
+
+
+#### Rozwiązanie
+
+\(2.1.\) Wczytanie danych:
+```{r}
+library(MASS)
+data(cabbages, package = "MASS")
+filtered_cabbages <- cabbages[cabbages$Cult == "c39" & cabbages$Date == "d16", ]
+```
+\newpage
+
+Wyświetlenie histogramu mas okazów kapusty:
+```{r}
+hist(
+  filtered_cabbages$HeadWt,
+  breaks = 10,
+  main = "Histogram mas okazów kapusty dla c39 (d16)",
+  xlab = "Masa główki kapusty (kg)",
+  ylab = "Częstość",
+  col = "goldenrod",
+)
+```
+\newpage
+
+\(2.2.\) Średnia, odchylenie i błąd standardowy, przedziały ufności
+
+Obliczenie średniej, odchylenia standardowego i błędu standardowego:
+```{r}
+mean_weight <- mean(filtered_cabbages$HeadWt, na.rm = TRUE)
+mean_weight
+sd_weight <- sd(filtered_cabbages$HeadWt, na.rm = TRUE)
+sd_weight
+n <- nrow(filtered_cabbages)
+se <- sd_weight / sqrt(n)
+se
+```
+Wyznaczenie przedziałów ufności \(90\%\) i \(95\%\):
+```{r}
+alpha_90 <- 0.10
+alpha_95 <- 0.05
+t_90 <- qt(1 - alpha_90 / 2, df = n - 1)
+t_95 <- qt(1 - alpha_95 / 2, df = n - 1)
+ci_90 <- c(
+  mean_weight - t_90 * se,
+  mean_weight + t_90 * se
+)
+ci_90
+ci_95 <- c(
+  mean_weight - t_95 * se,
+  mean_weight + t_95 * se
+)
+ci_95
+```
+\newpage
+
+Porównując z funkcją \texttt{t.test()}:
+```{r}
+t_test_result_90 <- t.test(filtered_cabbages$HeadWt, conf.level = 0.90)$conf.int
+t_test_result_90
+t_test_result_95 <- t.test(filtered_cabbages$HeadWt, conf.level = 0.95)$conf.int
+t_test_result_95
+```
+
+Jak widać zwrócone wartości są takie same, jak te, które obliczyliśmy za pomocą funkcji \texttt{qt()}.
+
+Wyświetlenie wykresu kwantyl-kwantyl:
+```{r}
+qqnorm(filtered_cabbages$HeadWt, main = "Wykres kwantyl-kwantyl (c39, d16)",
+  xlab = "Kwantyle teoretyczne", ylab = "Kwantyle empiryczne")
+qqline(filtered_cabbages$HeadWt, col = "red")
+```
+\newpage
+
+\(2.3.\) Użycie metody bootstrap do wyznaczenia przedziałów ufności \(90\%\) i \(95\%\)
+
+Ustawiam mój numer albumu jako ziarno dla powtarzalności wyników:
+```{r}
+set.seed(151885)
+```
+
+Deklaracja parametrów:
+```{r}
+n <- 1000
+sample_size <- 10
+bootstrap_means <- numeric(n)
+```
+
+Zastosowanie metody bootstrap:
+```{r}
+for (i in 1:n) {
+  bootstrap_sample <- sample(filtered_cabbages$HeadWt, size = sample_size, replace = TRUE)
+  bootstrap_means[i] <- mean(bootstrap_sample, na.rm = TRUE)
+}
+```
+
+Wyznaczenie przedziałów ufności \(90\%\) i \(95\%\):
+```{r}
+ci_90 <- quantile(bootstrap_means, probs = c(0.05, 0.95))
+ci_90
+```
+```{r}
+ci_95 <- quantile(bootstrap_means, probs = c(0.025, 0.975))
+ci_95
+```
+\newpage
+
+## Zadanie 3 - Przedziały ufności, rozkład \(t\)-Studenta
+#### Treść
+
+\begin{enumerate}[label=3.\arabic*]
+  \item  Z biblioteki MASS otworzyć zestaw danych cabbages. Ograniczyć data frame do danych 
+odnoszących się wyłącznie do kapusty gatunku ”c39” zasadzonej w dniu ”d16”. Przedstawić 
+histogram mas okazów kapusty. 
+  \item Znaleźć średnią, odchylenie standardowe i błąd standardowy średniej (= \(\frac{\sigma}{\sqrt{n}}\))  dla  kapusty ”c39” zasadzonej dnia ”d16”.
+  \item Zakładając, że rozkład mas kapusty w całej populacji jest normalny, a odchylenie standardowe tego rozkładu jest równe błędowi standardowemu znalezionemu w poprzednim zadaniu, znaleźć przedziały ufności 90\% i 95\% dla  średniej  masy  kapusty.  Użyć  funkcji \texttt{qnorm()}.
+  \item W rzeczywistości nie należy w takim przypadku zakładać, że rozkład jest normalny (co 
+zresztą wyraźnie widać też na histogramie), ponieważ liczba próbek \(<  30\). Użyć rozkładu \(t\)-Studenta  (funkcja  \texttt{qt()}).  Znaleźć ponownie przedziały ufności \(90\)\% i \(95]\)\%. Porównać wynik z rezultatem zwracanym przez funkcję \texttt{t.test()}.
+  \item Przedstawić masy kapust na wykresie kwantyl-kwantyl.
+\item Niewielka ilość danych, w oparciu o które znajdujemy średnią, jak i wątpliwa normalność 
+rozkładu skłania do znalezienia dokładniejszej metody. Użyć metody bootstrap, aby wyznaczyć 
+przedziały ufności \(90\%\) i \(95\%\). 
+\begin{enumerate}[label*=.\arabic*.]
+  \item Z naszej próbki kapust o rozmiarze \(10\) wylosować nową próbkę, ze zwracaniem, również 
+  o rozmiarze \(10\) (funkcja \texttt{sample}). 
+  \item Znaleźć średnią dla tej próbki i zapisać ją. 
+  \item Powtórzyć kroki 1-2 tysiąc razy. 
+  \item Dla przedziału ufności \(90\%\) będziemy używać percentyla \(5\%\) zestawu średnich znalezionych w pkcie 2. jako dolną granicę przedziału ufności oraz percentyla \(95\%\) jako górną granicę. Określić przedziały ufności \(90\%\) i \(95\%\).
+\end{enumerate}
+\end{enumerate}
+
+
+#### Rozwiązanie
+
+\(3.1.\) Wczytanie danych:
+```{r}
+library(MASS)
+data(cabbages, package = "MASS")
+filtered_cabbages <- cabbages[cabbages$Cult == "c39" & cabbages$Date == "d16", ]
+```
+\newpage
+
+Wyświetlenie histogramu mas okazów kapusty:
+```{r}
+hist(
+  filtered_cabbages$HeadWt,
+  breaks = 10,
+  main = "Histogram mas okazów kapusty dla c39 (d16)",
+  xlab = "Masa główki kapusty (kg)",
+  ylab = "Częstość",
+  col = "goldenrod",
+)
+```
+\newpage
+
+\(3.2.\) Średnia, odchylenie i błąd standardowy średniej.
+
+Obliczenie średniej, odchylenia standardowego i błędu standardowego:
+```{r}
+mean_weight <- mean(filtered_cabbages$HeadWt, na.rm = TRUE)
+mean_weight
+sd_weight <- sd(filtered_cabbages$HeadWt, na.rm = TRUE)
+sd_weight
+n <- nrow(filtered_cabbages)
+se <- sd_weight / sqrt(n)
+se
+```
+
+\(3.3.\) Przedziały ufności dla rozkładu normalnego.
+
+Obliczenie przedziały ufności, przy załozeniu, ze rozkład mas kapusty w całej populacji jest normalny, a odchylenie standardowe tego rozkładu jest równe błędowi standardowemu z poprzedniego zadania:
+```{r}
+alpha_90 <- 0.10
+alpha_95 <- 0.05
+
+z_90 <- qnorm(1 - alpha_90 / 2)
+z_95 <- qnorm(1 - alpha_95 / 2)
+
+ci_90 <- c(mean_weight - z_90 * se, mean_weight + z_90 * se)
+ci_90
+ci_95 <- c(mean_weight - z_95 * se, mean_weight + z_95 * se)
+ci_95
+```
+\newpage
+
+\(3.4.\) Przedziały ufności przy pomocy rozkładu \(t\)-Studenta.
+
+Wyznacznie przedziałów ufności:
+```{r}
+alpha_90 <- 0.10
+alpha_95 <- 0.05
+t_90 <- qt(1 - alpha_90 / 2, df = n - 1)
+t_95 <- qt(1 - alpha_95 / 2, df = n - 1)
+ci_90 <- c(
+  mean_weight - t_90 * se,
+  mean_weight + t_90 * se
+)
+ci_90
+ci_95 <- c(
+  mean_weight - t_95 * se,
+  mean_weight + t_95 * se
+)
+ci_95
+```
+
+Porównując z funkcją \texttt{t.test()}:
+```{r}
+t_test_result_90 <- t.test(filtered_cabbages$HeadWt, conf.level = 0.90)$conf.int
+t_test_result_90
+t_test_result_95 <- t.test(filtered_cabbages$HeadWt, conf.level = 0.95)$conf.int
+t_test_result_95
+```
+
+Jak widać zwrócone wartości są takie same, jak te, które obliczyliśmy za pomocą funkcji \texttt{qt()}.
+
+\newpage
+
+\(3.5.\) Przedstawienie mas kapust w wykresie kwantyl-kwantyl:
+```{r}
+qqnorm(filtered_cabbages$HeadWt, main = "Wykres kwantyl-kwantyl (c39, d16)",
+  xlab = "Kwantyle teoretyczne", ylab = "Kwantyle empiryczne")
+qqline(filtered_cabbages$HeadWt, col = "red")
+```
+\newpage
+
+
+\(3.6.\) Użycie metody bootstrap do wyznaczenia przedziałów ufności \(90\%\) i \(95\%\)
+
+Deklaracja parametrów:
+```{r}
+n <- 1000
+sample_size <- 10
+bootstrap_means <- numeric(n)
+```
+
+Zastosowanie metody bootstrap:
+```{r}
+for (i in 1:n) {
+  bootstrap_sample <- sample(filtered_cabbages$HeadWt, size = sample_size, replace = TRUE)
+  bootstrap_means[i] <- mean(bootstrap_sample, na.rm = TRUE)
+}
+```
+
+Wyznaczenie przedziałów ufności \(90\%\) i \(95\%\):
+```{r}
+ci_90 <- quantile(bootstrap_means, probs = c(0.05, 0.95))
+ci_90
+```
+```{r}
+ci_95 <- quantile(bootstrap_means, probs = c(0.025, 0.975))
+ci_95
+```
+\newpage
+
+## Zadanie 4 - Asymptotyka rozkładu \(t\)-Studenta
+#### Treść
+
+Przedstawić na jednym wykresie krzywą standardowego
+rozkładu normalnego oraz krzywe rozkładu \(t\)-Studenta o \(1, 2, 4, 10\) i \(30\) stopniach swobody.
+
+#### Rozwiązanie
+
+Generowanie wartości dla osi `x`:
+```{r}
+x <- seq(-4, 4, length.out = 1000)
+```
+Obliczenie wartości i wyświetlenie wykresu:
+```{r}
+# Krzywa rozkladu normalnego
+normal_density <- dnorm(x)
+plot(x, normal_density, type = "l", col = "black", lwd = 2,
+     xlab = "x", ylab = "Gęstość", main = "Rozkład normalny i rozkłady t-Studenta")
+# Krzywe rozkladu t-Studenta
+n <- c(1, 2, 4, 10, 30)
+colors <- cm.colors(length(n))
+for (i in seq_along(n)){
+  lines(x, dt(x, df = i), col = colors[i], lwd = 2, lty = i + 1)
+}
+# Legenda
+legend("topright", legend = c("Normalny", paste0("t (df=", n, ")")),
+       col = c("black", colors), lty = c(1, 2:(length(n) + 1)), lwd = 2)
+```
+
+\newpage
+
+## Zadanie 5 - Współczynniki Studenta-Fischera
+#### Treść
+
+Znaleźć przedziały ufności \(95\)% oraz \(68.27\)% dla rozkładów \(t\)-Studenta o \(1, 2, 3, ..., 30\) stopniach 
+swobody. Porównać wynik z tablicami współczynników Studenta-Fischera:
+
+\url{https://www.ifiz.umk.pl/panel/wp-content/uploads/wspSF5cyf.pdf}
+
+#### Rozwiązanie
+
+Obliczenie przedziałów ufności:
+```{r}
+df_range <- 1:30
+alpha_95 <- 0.05
+t_critical_95 <- qt(1 - alpha_95 / 2, df = df_range)
+alpha_68 <- 1 - 0.6827
+t_critical_68 <- qt(1 - alpha_68 / 2, df = df_range)
+```
+\newpage
+Wyświetlenie tabeli:
+```{r}
+results <- data.frame(
+  Degrees_of_Freedom = df_range,
+  T_Critical_95 = t_critical_95,
+  T_Critical_68 = t_critical_68
+)
+
+print(results)
+```
+
+\newpage
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.8\textwidth]{rys2.png}
+\caption{Fragment tabeli współczynników Studenta-Fischera. Źródło: \url{https://www.ifiz.umk.pl/panel/wp-content/uploads/wspSF5cyf.pdf}}
+\label{fig:bootstrap}
+\end{figure}
+
+Porównując tabelę z poprzedniej strony z tabelą współczynników Studenta-Fischera mozemy zobaczyć, ze wyliczone wartości są zbiezne z tabelą.
+\newpage
+
+## Zadanie 6 – Dystrybuanta empiryczna
+#### Treść
+
+\begin{enumerate}[label=6.\arabic*]
+    \item Z biblioteki \texttt{MASS} otworzyć zestaw danych \texttt{birthwt} zawierający informacje dotyczące noworodków w Baystate Medical Center w Springfield (1986). Przedstawić histogram mas noworodków (ostatnia kolumna data frame), sprawdzić normalność rozkładu na wykresie kwantyl-kwantyl oraz znaleźć średnią masę i odchylenie standardowe.
+    \item Jaki procent badanych kobiet paliło w ciąży? Przedstawić informację o palących i niepalących na wykresie kołowym wraz z etykietami obu części wykresu (\texttt{pie()}, \texttt{labels}).
+    \item Przedstawić dystrybuantę empiryczną mas niemowląt na wykresie. Użyć funkcji \texttt{ecdf()}.
+    \item Skonstruować własną funkcję obliczającą dystrybuantę empiryczną. Przedstawić dystrybuantę mas niemowląt na wykresie i porównać wynik z poprzednim zadaniem.
+    \item Przedstawić na jednym wykresie dystrybuantę empiryczną z zadania 6.3 oraz dystrybuantę rozkładu normalnego o znalezionych w zadaniu 6.1 średniej i odchyleniu standardowym.
+\end{enumerate}
+
+#### Rozwiązanie
+\begin{enumerate}[label=6.\arabic*]
+    \item Wczytanie danych i analiza mas noworodków.
+\end{enumerate}
+
+Wczytanie danych:
+```{r birthwt-data}
+library(MASS)
+data(birthwt, package = "MASS")
+```
+\newpage
+Wyświetlenie histogramu mas noworodków:
+```{r}
+hist(
+  birthwt$bwt,
+  breaks = 20,
+  main = "Histogram mas noworodków",
+  xlab = "Masa noworodka (gramy)",
+  ylab = "Częstość",
+  col = "blue"
+)
+```
+\newpage
+Sprawdzenie normalności rozkładu - wykres kwantyl-kwantyl:
+```{r}
+qqnorm(birthwt$bwt, main = "Wykres kwantyl-kwantyl mas noworodków",
+  xlab = "Kwantyle teoretyczne", ylab = "Kwantyle empiryczne")
+qqline(birthwt$bwt, col = "red")
+```
+Jak widać z wykresu, rozkład mas noworodków nie jest idealnym rozkładem normalnym, ale przypomina go. Istnieją wartości odstające od prostej, ale w większości przypadków dane są zgodne z rozkładem normalnym.
+
+Obliczenie średniej masy i odchylenia standardowego:
+```{r}
+mean_bwt <- mean(birthwt$bwt)
+mean_bwt
+sd_bwt <- sd(birthwt$bwt)
+sd_bwt
+```
+\newpage
+\(6.2.\) Analiza palenia w ciąży:
+
+Obliczenie procentu kobiet palących i niepalących:
+```{r}
+smoking_counts <- table(birthwt$smoke)
+smoking_labels <- c("Niepalące", "Palące")
+smoking_percent <- round(100 * smoking_counts / sum(smoking_counts), 1)
+```
+Wyświetlenie wykresu kołowego:
+```{r}
+pie(
+  smoking_counts,
+  labels = paste(smoking_labels, " (", smoking_percent, "%)", sep = ""),
+  main = "Procent kobiet palących i niepalących w ciąży",
+  col = c("springgreen2", "plum2")
+)
+```
+\newpage
+\(6.3.\) Dystrybuanta empiryczna mas niemowląt.
+
+Obliczenie dystrybuanty empirycznej:
+```{r}
+ecdf_weight <- ecdf(birthwt$bwt)
+```
+
+Wyświetlenie wykresu dystrybuanty empirycznej:
+```{r}
+plot(
+  ecdf_weight,
+  main = "Dystrybuanta empiryczna mas niemowląt",
+  xlab = "Masa noworodka (gramy)",
+  ylab = "Dystrybuanta empiryczna",
+  col = "blue",
+  lwd = 2
+)
+```
+\newpage
+\(6.4.\) Własna funkcja do obliczania dystrybuanty empirycznej.
+
+Deklaracja funkcji:
+```{r}
+my_ecdf <- function(x) {
+  x_sorted <- sort(x)
+  n <- length(x)
+  function(t) sapply(t, function(ti) sum(x_sorted <= ti) / n)
+}
+```
+
+Obliczanie dystrybuanty empirycznej:
+```{r}
+custom_ecdf_weight <- my_ecdf(birthwt$bwt)
+```
+\newpage
+Wyświetlenie wykresu porównawczego dystrybuanty empirycznej:
+```{r}
+plot(
+  ecdf_weight,
+  main = "Dystrybuanta empiryczna mas niemowląt",
+  xlab = "Masa noworodka (gramy)",
+  ylab = "Dystrybuanta empiryczna",
+  col = "blue",
+  lwd = 2
+)
+curve(custom_ecdf_weight, add = TRUE, col = "red", lwd = 2, lty = 2)
+legend(
+  "bottomright",
+  legend = c("ecdf()", "my_ecdf()"),
+  col = c("blue", "red"),
+  lty = c(1, 2),
+  lwd = 2,
+  inset = 0.03
+)
+```
+
+Jak widać z wykresu, dystrybuanta empiryczna uzyskana za pomocą funkcji `ecdf()` jest taka sama, jak ta uzyskana za pomocą własnej funkcji `my_ecdf()`.
+\newpage
+\(6.5.\) Porównanie dystrybuanty empirycznej z zadania \(6.3\) z dystrybuantą rozkładu normalnego o parametrach z zadania \(6.1\).
+
+Obliczenie wartości dystrybuanty rozkładu normalnego:
+```{r}
+x_vals <- seq(min(birthwt$bwt), max(birthwt$bwt), length.out = 1000)
+normal_cdf <- pnorm(x_vals, mean = mean_bwt, sd = sd_bwt)
+```
+Wyświetlenie wykresu porównawczego:
+```{r}
+plot(
+  ecdf_weight,
+  main = "Porównanie dystrybuanty empirycznej i dystrybuanty\nrozkładu normalnego",
+  xlab = "Masa noworodka (gramy)",
+  ylab = "Dystrybuanta",
+  col = "blue",
+  lwd = 2
+)
+lines(x_vals, normal_cdf, col = "red", lwd = 2, lty = 2)
+legend(
+  "bottomright",
+  legend = c("Dystrybuanta empiryczna ", "Rozkład normalny"),
+  col = c("blue", "red"),
+  lty = c(1, 2),
+  lwd = 2,
+  inset = 0.03,
+)
+```
