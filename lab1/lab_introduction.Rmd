@@ -1,0 +1,257 @@
+---
+title: "Introduction"
+output: html_notebook
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# wczytujemy przykładowe dane
+
+```{r}
+library(MASS)
+```
+
+data(Cars93)
+
+edit(Cars93) # ogladamy dane
+
+dim(Cars93) # wielkosc zbioru danych
+
+names(Cars93) # lista zmiennych
+
+Cars93$Price # dostep do zmiennej
+
+Cars93[17,5] # dostep do pojedynczych elementow
+
+Cars93[,5] # dostep do kolumn danych
+
+Cars93[17,] # dostep do wierszy danych
+
+#W R wszystko jest obiektem. Każdy obiekt ma swoje właściwości. Obiekty w pakiecie R to:
+# - tablice liczb (liczba jest tablicą jednoelementową),
+# - tablice znaków,
+# - funkcje,
+# - bardziej złożone struktury danych, na przykład modele statystyczne albo dane, które analizujemy (te struktury zbudowane są z powyższych elementów).
+
+#Funkcje obsługujące cechy obiektów
+# class() - klasa (rodzaj) obiektu, dodatkowy atrybut uzupełniający "mode",
+# length() - długość obiektu,
+# attributes() - atrybuty obiektu,
+# attr() - dostęp do atrybutów obiektu,
+# object.size() - wielkość obiektu w bajtach,
+# mode() - wewnętrzna reprezentacja obiektu,
+# str() - szczegóły wewnętrznej reprezentacji obiektu.
+
+seq(1,5,by=0.5) #liczby od 1 do 5 z krokiem 0.5
+
+#Zmienne i operatory logiczne
+# TRUE (T) - wartość liczbowa == 1
+# FALSE (F) - wartość liczbowa == 0
+# NA ("not available") - kod brakującej obserwacji ważne w statystyce
+# NaN ("Not a Number") - wyrażenie nie jest wartością liczbową np. dzielenie przez zero
+# x<y - prawda jeżli x mniejsze od y
+# x<=y - prawda jeżli x mniejsze lub równe y
+# x>y - prawda jeżli x większe od y
+# x>=y - prawda jeżli x większe lub równe y
+# x==y - prawda jeżli x równe y
+# x!=y - prawda jeżli x różne od y
+# & - logiczny "and"
+# | -  logiczny "or"
+# !A - negacja wyrażenia logicznego A
+
+x <- TRUE # zmienna x = 1
+y <- x & T # zmienna y = 1
+z <- x & F # zmienna z = 0
+
+#Wektory i operacje na wektorach
+
+w <-c(1,2,3) #- w jest wektorem o elementach 1, 2 i 3
+c(1,2,3)-> w #- to samo
+w <-1:3 #- to samo
+w = 1:3 #- to samo
+length(w) #- zwraca ilo±¢ elementów wektora w
+sin(w) #- liczy sinus dla wszystkich elementów wektora
+min(w) #- znajduje najmniejszy element wektora w i zwraca go
+max(w) #- znajduje najwi¦kszy element wektora w i zwraca go
+sum(w) #- sumuje wszystkie elementy wektora w i zwraca wynik
+prod(w) #- mnoży wszystkie elementy wektora w i zwraca wynik
+w.l <-c(T,T,F) #- wektor "w.l" składa się z elementów 1, 1, 0
+w.t <-c("jeden","dwa","trzy") #- wektor "w.t" to wektor zawierający łańcuchy znakowe
+sort(w.t) #- ponieważ sortujemy łańcuchy, więc porządek jest leksykograficzny (czyli alfabetyczny)
+length(w.t) #- wektor ma trzy elementy
+w.t[2] #- tak dostajemy się do drugiego elementu wektora "w.t"; należy pamiętać, że R numeruje od 1!!!
+w.t[c(3,2)] #- zwrócone zostaną elementy wektora "w.t" znajdujące się na pozycjach będących składowymi wektora z nawiasów kwadratowych, czyli: "trzy", "dwa"
+zakupy<-c(ser = 3, woda = 5, chleb = 1) #- utworzony został wektor z nazwanymi elementami, takie wektory lub listy często są zwracane jako wyniki działania wbudowanych funkcji R.
+names(zakupy)
+#Operacje na wektorach wartości logicznych
+#TRUE, FALSE - wartości logiczne
+#& - operator "and"
+#| - operator "or"
+#== - porównanie
+#any - czy przynajmniej jedna wartość wektora to TRUE
+#all - czy wszystkie wartości wektora to TRUE
+#which - indeksy elementów, w których jest TRUE
+a <- c(T,T,F); b <- c(T,F,T)
+a&b # wynikiem jest caly wektor
+
+#Wektoryzacja operacji
+waga <-c(60,72,57,90,95) #- tworzony jest wektor wartości liczbowych
+waga #- wypisanie zawartości wektora na ekran
+wzrost <-c(1.72,1.80,1.65,1.90,1.74) #- kolejny wektor wartości
+wzrost #- wypisanie zawartości wektora
+bmi <-waga /wzrost^2 #- deklaracja wektora "bmi" i przypisanie do niego wartości będących wynikiem operacji na dwóch przed chwilą utworzonych wektorach 
+bmi #- wypisanie zawartości na ekran
+sum(waga) #- suma elementów wektora "waga"
+sum(waga)/length(waga) #- suma elementów wektora "waga" podzielona przez liczbę elementów tego wektora
+sr.waga <-sum(waga)/length(waga) #- jak wyżej, ale przypisanie wyliczonej wartości do zmiennnej "sr.waga" (średnia waga)
+waga - sr.waga #- wektor odchyleń od średniej dla wektora "waga"
+(waga - sr.waga)^2 #- wektor kwadratów odchyleń dla wektora "waga"
+sum((waga - sr.waga)^2) #- suma kwadratów odchyleń
+sqrt(sum((waga - sr.waga)^2)/(length(waga)- 1)) #- odchylenie standardowe wektora "waga"
+mean(waga) #- średnia wektora "waga"
+sd(waga) #- odchylenie standardowe (identyczna wartość otrzymana została dwie linie wyżej)
+summary(waga) #- podsumowanie dla wektora "waga" (minimum, maksimum, średnia, kwantyle)
+bmi > 25 #- wynikiem działania polecenia jest wektor o długości takiej, jak wektor "bmi" i wartościach logicznych będących wynikiem działania warunku na poszczególne elementy wektora "bmi"
+
+#Macierze
+a <-matrix(c(2,5,1,3), nrow = 2, ncol = 2) #-macierz 2x2
+a
+a[1,2] #- pobieranie elementu z pierwszego wiersza i drugiej kolumny
+a[,2] #- druga kolumna macierzy
+a[1,] #- piewszy wiersz macierzy
+a %*%t(a) #- mnożenie macierzowe macierzy "a" i jej macierztransponowanej
+a.1<-solve(a) #- odwrócenie macierzy "a" i zapisanie macierzy odwrotnej w zmiennej "a.1"
+a.1
+a *a.1 #- mnożenie macierzy element po elemencie
+diag(a) #- przekątna macierzy "a"
+rbind(c(1,2),c(3,4)) #- tworzenie macierzy przez podanie jej kolejnych wierszy jako wektorów
+cbind(c(1,2),c(3,4)) #- tworzenie macierzy przez podanie jej kolejnych kolumn jako wektorów,
+m <-matrix(1:9,3) #- tworzona jest macierz o trzech wierszach, wypełniona elementami od 1 do 9
+m
+dimnames(m)<-list(c("x1","x2","x3"),c("y1","y2","y3")) #- nadane zostaną nazwy: wierszom "x1", "x2" , "x3", a kolumnom "y1", "y2", "y3"
+m["x2","y3"] #- teraz w inny sposób można się dostać do potrzebnych elementów
+
+#Listy
+student <-list(imie="Jan", wiek=22, zonaty=F) #- zmienna "student" jest obiektem typu lista
+student$imie #- zwróci "Jan"; do składowych zmiennej student odwołujemy się przy pomocy znaku $
+student$wiek #- analogicznie
+student$zonaty #- analogicznie
+student[[1]] #- działa identycznie jak student$imie
+lista <-c(list(1,2,3),list(4,5,6)) #- przykład łączenia dwóch list
+lapply(lista,mean) #- na każdy element listy "lista" zostanie
+nałożona funkcja mean
+
+#Dane
+data(iris) #- ten zestaw danych jest wbudowany w R; polecenie ładuje zestaw danych do pamięci i pozwala z tych danych korzystać
+dane <-iris #- w ten sposób zestaw danych "iris" został przypisany do zmiennej "dane"
+head(dane) #- wyświetla pięć pierwszych elementów zbioru "dane"
+summary(dane) #- wyświetla minimum, maksimum, średnią i kwantyle dla każdej kolumny
+row.names(dane) #- wyświetla nazwy wierszy, w tym przypadku są to numery
+dim(dane) #- zwraca wymiar, w tym przypadku 150 × 5
+class(dane) #- klasa, jaką reprezentuje obiekt; ważne w programowaniu obiektowym
+
+#Ramki danych
+zwierzeta <- data.frame(
+gatunek =c("bobr", "morswin", "swistak", "leszcz", "kielb", "turkuc podjadek"),
+gromada =c("ssaki", "ssaki", "ssaki", "ryby", "ryby", "owady"),
+srodowisko=c("ladowe", "wodne", "ladowe", "wodne", "wodne", "ladowe"),
+wielkosc =c("sredni", "duzy", "sredni", "sredni", "maly", "maly"),
+liczba =c( 2, 4, 1, 3, 4, 10))
+class(zwierzeta$gromada)
+zwierzeta$gatunek <- as.character(zwierzeta$gatunek)
+zwierzeta$gromada <- factor(zwierzeta$gromada)
+zwierzeta$srodowisko <- factor(zwierzeta$srodowisko)
+zwierzeta$wielkosc <- ordered(zwierzeta$wielkosc,levels=c("maly","sredni","duzy"))
+class(zwierzeta$gromada)
+zwierzeta$wielkosc
+levels(zwierzeta$wielkosc)
+zwierzeta$srodowisko
+#Teraz już łatwo zrozumieć, że wielkosc jest zmienną kategoryczną. Oznacza to, że przyjmuje tylko pewną liczbę z góry określonych poziomów. Poziomy te zostały wypisane przy pomocy polecenia levels(zwierzeta$wielkosc). Mo»liwe poziomy mogą być uporządkowane, mogą być też nieuporządkowane, jak w przypadku zmiennej srodowisko.
+attach(zwierzeta)
+gatunek[3] # teraz nie jest juz potrzebny zapis zwierzeta$gatunek[3]
+detach(zwierzeta)
+zwierzeta[which.max(zwierzeta$liczba),]
+subset(zwierzeta,gromada=="ssaki")
+
+#Grafika
+#Funkcje graficzne wysokiego poziomu rysują cały obrazek (np. funkcja plot()).
+#Funkcje graficzne niskiego poziomu uzupełniają tylko istniejące rysunki (np. funkcja points()).
+x <- seq(from=0,to=10,by=0.01)
+curve(dchisq(x,1), xlim=c(0,10), ylim=c(0,.6))
+curve(dchisq(x,4), add=T)
+curve(dchisq(x,1), xlim=c(0,10), ylim=c(0,.6), col="red", lwd=3, main="Rozklady Chi^2", xlab="",ylab="")
+curve(dchisq(x,4), add=T, col="green", lwd=3)
+
+proba <- rnorm(200)
+hist(proba,20,probability=TRUE,col="light blue")
+curve(dnorm(x),lwd=3,col="red",add=TRUE)
+
+#Funkcje graficzne wysokiego poziomu
+# plot - podstawowa funkcja graficzna
+# hist - histogram
+# pie - wykres kołowy
+# barplot - wykres słupkowy
+# boxplot - wykres pudełkowy
+# pairs - zestaw wykresów rozrzutu
+# stars - wykres radarowy
+# mosaicplot - wykres mozaikowy
+
+#Losowanie, zmienne losowe, symulacje
+# losujemy 20 razy ze zbioru {"O", "R"} ze zwracaniem
+wyniki <- sample(c("O","R"), replace=TRUE, size=20)
+print(wyniki)
+table(wyniki) # ile razy wypadl orzel, a ile reszka
+
+#dnazwa - gęstość rozkładu "nazwa",
+#pnazwa - dystrybuanta,
+#qnazwa - kwantyle / dystrybuanta odwrotna,
+#rnazwa - generator liczb pseudolosowych
+
+# gestosc rozkladu normalnego w 0
+dnorm(0)
+# dystrybuanta w 0
+pnorm(0)
+# ile masy standardowego rozkladu normalnego N(0,1) miesci sie miedzy -3 a 3?
+pnorm(3) - pnorm(-3)
+# 100 obserwacji z rozkladu N(2,1)
+rnorm(100,mean=2,sd=1)
+# pierwszy kwartyl
+qnorm(0.25)
+# zobaczmy, czy przypomina rozklad normalny
+hist(rnorm(1000))
+# proba z rozkladu jednostajnego i histogram dla takiej proby
+runif(1000)
+hist(runif(1000), prob=TRUE)
+
+#Przykład praktyczny
+library(MASS) # wczytujemy biblioteke MASS, w ktorej sa dane
+data(Cars93) # wczytujemy dane
+# przyrzyjmy sie zmiennym: cena samochodu, pojemnosc skokowa silnika
+hist(Cars93$Price)
+hist(Cars93$EngineSize)
+# zobaczymy, czy one od siebie zaleza (widac zaleznosc, ale niezbyt liniowa)
+plot(Cars93$EngineSize, Cars93$Price)
+# korelacja jednak jest dosyc wysoka
+cor(Cars93$EngineSize, Cars93$Price)
+# spróbujmy zbudowa¢ model regresji liniowej
+# model da nam odpowiedz, ile musimy zaplacic,
+# jesli chcemy miec samochod o okreslonej pojemnosci silnika
+library(MASS)
+model <- lm(Cars93$Price ~ Cars93$EngineSize, data=Cars93)
+# zobaczmy, jak model wyglada
+print(model)
+# spojrzmy, czy model jest dobrze dopasowany
+plot(model)
+# prognozowane ceny na podstawie pojemnosci skokowej
+fitted(model)
+# spojrzmy na wykres
+plot(Cars93$EngineSize, Cars93$Price)
+abline(model)
+points(Cars93$EngineSize, fitted(model), col="red", pch=20, cex=1.5)
+
+# nic nie rysuje (type="n"), tylko definiuje zakresy osi
+plot(0,0,xlim=c(-3,3),ylim=c(-3,3),type="n")
+# warto uruchomic kilkukrotnie!
+points(rnorm(20),rnorm(20),pch=1:20,cex=5*rnorm(20),col=rainbow(20))

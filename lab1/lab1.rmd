@@ -1,0 +1,415 @@
+---
+title: "Laboratorium 1"
+subtitle: "Wstęp do Analizy Danych | Politechnika Krakowska"
+author: "Jakub Kapała"
+output: 
+  pdf_document:
+    latex_engine: xelatex
+header-includes: |
+  \usepackage{fancyhdr}
+  \pagestyle{fancy}
+  \fancyhead[L]{\textbf{WdAD - Sprawozdanie - Laboratorium 1}}
+  \fancyhead[R]{\textbf{Jakub Kapała}}
+---
+
+```{r setup, include=FALSE}
+library(Cairo)
+knitr::opts_chunk$set(dev = "CairoPDF", echo = TRUE)
+Sys.setlocale("LC_CTYPE", "pl_PL.UTF-8")
+```
+\begin{center}
+{\small Numer albumu: 151885} \\[0.1cm]
+{\small Data: `r format(Sys.time(), '%d.%m.%Y')`}
+\end{center}
+\newpage
+## Zadanie 1 - rozgrzewka, filtrowanie
+#### Treść
+Zadeklarować wektor zawierający liczby nieparzyste z przedziału [-5, 15]. Wyświetlić jego podwektory:
+
+1. całość
+2. pierwszy element
+3. elementy o indeksach od 1 do 3
+4. wszystkie poza pierwszym
+5. o indeksach wyłącznie 2, 4 i 7
+6. elementy dodatnie
+7. elementy podzielne przez 3.
+
+
+#### Rozwiązanie
+Deklaracja wektora:
+```{r}
+liczby <- seq(-5, 15, by = 2)
+```
+Wyświetlenie podwektorów:
+
+1. Całość:
+```{r}
+liczby
+```
+2. Pierwszy element:
+```{r}
+liczby[1]
+```
+3. Elementy o indeksach od 1 do 3
+```{r}
+liczby[1:3]
+```
+4. Wszystkie poza pierwszym
+```{r}
+liczby[-1]
+```
+5. O indeksach wyłącznie 2, 4 i 7
+```{r}
+liczby[c(2, 4, 7)]
+```
+6. Elementy dodatnie
+```{r}
+liczby[liczby > 0]
+```
+7. Elementy podzielne przez 3
+```{r}
+liczby[liczby %% 3 == 0]
+```
+
+\newpage
+## Zadanie 2 - rozgrzewka, malarze, boxplot
+#### Treść
+Korzystając z danych `painters` biblioteki `MASS` wykreślić diagram zawierający wykresy pudełkowe (boxplot) dla poszczególnych szkół malarstwa.
+
+#### Rozwiązanie
+Wczytanie biblioteki `MASS` oraz danych `painters`:
+```{r}
+library(MASS)
+data(painters)
+summary(painters)
+```
+Wyświetlenie diagramu:
+```{r}
+boxplot(
+  painters$Expression ~ painters$School,
+  main = "Ekspresja malarska według szkoły malarstwa",
+  xlab = "Szkoła malarstwa",
+  ylab = "Ocena ekspresji",
+  col = cm.colors(length(unique(painters$School)))
+)
+```
+
+\newpage
+## Zadanie 3 - wzrost
+#### Treść
+Otworzyć pakiet danych `survey` z biblioteki `MASS`. Przedstawić histogramy wzrostu studentów University of Adelaide osobno dla mężczyzn i kobiet. Za pomocą parametru breaks wypróbować różne szerokości przedziałów histogramu, w tym histogram z przedziałami o niejednakowej szerokości. Przedstawić histogram z podpisanymi osiami, podpisem całego histogramu oraz o wybranym kolorze słupków.
+
+Znaleźć kwartyle/medianę/średnią/minimum/maksimum dla wzrostu mężczyzn oraz kobiet (funkcja summary()).
+
+Przedstawić na wspólnym wykresie boxplot wieku mężczyzn oraz kobiet (analogicznie jak w poprzednim zadaniu).
+
+#### Rozwiązanie
+Wczytanie biblioteki `MASS` oraz danych `survey`:
+```{r}
+library(MASS)
+data(survey)
+summary(survey)
+```
+Wyświetlenie histogramów wzrostu osobno dla męczyzn i kobiet:
+```{r}
+hist(
+  survey$Height[survey$Sex == "Male"],
+  main = "Histogram wzrostu studentów University of Adelaide",
+  xlab = "Wzrost",
+  ylab = "Liczba studentów",
+  col = "blue",
+  breaks = 5
+)
+```
+
+```{r}
+hist(
+  survey$Height[survey$Sex == "Female"],
+  main = "Histogram wzrostu studentek University of Adelaide",
+  xlab = "Wzrost",
+  ylab = "Liczba studentek",
+  col = "pink",
+  breaks = 10
+)
+```
+
+Wyświetlenie kwartyli/mediany/średniej/minimum/maksimum dla wzrostu mężczyzn oraz kobiet:
+```{r}
+summary(survey$Height[survey$Sex == "Male"])
+```
+```{r}
+summary(survey$Height[survey$Sex == "Female"])
+```
+
+Przedstawienie boxplotu wieku wg płci:
+```{r}
+boxplot(
+  survey$Height ~ survey$Sex,
+  main = "Wiek osoby studenckiej według płci",
+  xlab = "Płeć",
+  ylab = "Wzrost",
+  col = c("pink", "blue")
+)
+```
+
+\newpage
+## Zadanie 4
+
+#### Treść
+
+Rozkład Gaussa. Jaki jest rozkład prawdopodobieństwa dla rzutu jedną kością?
+
+A dwiema (jak przy grze w Monopoly)?
+
+Utworzyć wektor `single` zawierający 100 000 zmiennych losowych z przedziału `[0, 1]` (funkcja `runif()`). Przedstawić histogram wyników tych 100 000 ”rzutów kością” – przyjąć szerokość przedziałów równą `0.02`. Opisać poziomą oś wykresu i podpisać cały wykres.
+
+Podobne zadanie wykonać dla wektora `double`, którego każdy element jest średnią arytmetyczną dwóch niezależnych zmiennych losowych, oraz dla `five`, który jest średnią pięciu ”rzutów kością”.
+
+#### Rozwiązanie
+
+Wykonanie rzutów jedną kością - wektor `single`:
+```{r}
+single <- runif(100000, min = 0, max = 1)
+hist(
+  single,
+  main = "Histogram rzutu jedną kością",
+  xlab = "Wynik rzutu [0-1]",
+  ylab = "Liczba rzutów",
+  col = "goldenrod",
+  breaks = seq(0, 1, by = 0.02)
+)
+```
+
+Wykonanie rzutów dwiema kośćmi - wektor `double`:
+```{r}
+double <- rowMeans(matrix(runif(100000 * 2, min = 0, max = 1), ncol = 2))
+hist(
+  double,
+  main = "Histogram rzutu dwiema kośćmi",
+  xlab = "Wynik rzutu [0-1]",
+  ylab = "Liczba rzutów",
+  col = "darkgoldenrod",
+  breaks = seq(0, 1, by = 0.02)
+)
+```
+
+Wykonanie rzutów pięcioma kośćmi - wektor `five`:
+```{r}
+five <- rowMeans(matrix(runif(100000 * 5, min = 0, max = 1), ncol = 5))
+hist(
+  five,
+  main = "Histogram rzutu pięcioma kośćmi",
+  xlab = "Wynik rzutu [0-1]",
+  ylab = "Liczba rzutów",
+  col = "darkorange4",
+  breaks = seq(0, 1, by = 0.02)
+)
+```
+
+\newpage
+## Zadanie 3 - test SAT (IU)
+#### Treść
+Wyniki egzaminu SAT Math dla studentów mają średnią 543 i standardowe odchylenie 110.
+
+1. Oblicz Z-scores dla: 300, 400, 500, 600, 700, 800.
+
+2. Oblicz wartości wyników SAT Math dla poszczególnych Z-scores: -2.09, -1.30, -0.39, 0.52,
+1.43, 2.34.
+
+3. Porównaj wyniki części (1) i (2).
+
+#### Rozwiązanie
+
+Deklaracja zmiennych:
+```{r}
+sd_sat <- 110
+mean_sat <- 543
+```
+Obliczenie Z-scores:
+```{r}
+sat_sample <- c(300, 400, 500, 600, 700, 800)
+z_scores_from_sample <- sat_sample
+z_scores_from_sample <- (z_scores_from_sample - mean_sat) / sd_sat
+z_scores_from_sample
+```
+Obliczenie wartości wyników SAT Math dla podanych Z-scores:
+```{r}
+z_scores_sample <- c(-2.09, -1.30, -0.39, 0.52, 1.43, 2.34)
+sat_scores_from_sample <- z_scores_sample
+sat_scores_from_sample <- sat_scores_from_sample * sd_sat + mean_sat
+sat_scores_from_sample
+```
+
+Porównanie wyników:
+```{r}
+comparison <- data.frame(
+  sat_sample,
+  z_scores_from_sample,
+  z_scores_sample,
+  sat_scores_from_sample
+)
+comparison
+```
+Jak widać, jedynie dla rzędu 1 (`sat_score = 300` -> `z_score = -2.2090909` oraz `z_score = -2.09` -> `sat_score = 313.1`) dane są różne, co wynika z tego, że dane wejściowe/wyjściowe różnią się miedzy soba.
+
+Wszystkie inne wyniki są zgodne, ponieważ dane wejściowe do przykładu 2 są takie same jak dane wyjściowe z przykładu 1.
+
+\newpage
+## Zadanie 6 - wzrost mężczyzn, analiza statystyczna (IU)
+
+#### Treść
+Dla wzrostu mężczyzn z zestawu danych `survey` znaleźć:
+
+1. Wartość średnią
+2. Odchylenie standardowe
+3. Z-score używając: (i) wzoru z-score, (ii) funkcji scale()
+4. Pokazać z-score graficznie. Opisać oś poziomą oraz pionową.
+5. Średnią oraz odchylenie standardowe otrzymanych z-scores. Zinterpretować wyniki.
+6. Minimum oraz maksimum z-score. Co oznaczają te wartości?
+7. Dla wybranych trzech z otrzymanych powyżej wartości z-score, użyj funkcję pnorm().
+
+Zinterpretuj wynik.
+
+#### Rozwiązanie
+
+Wczytanie biblioteki `MASS` oraz danych `survey`:
+```{r}
+library(MASS)
+data(survey)
+summary(survey)
+```
+
+Dane wzrostu mężczyzn: 
+```{r}
+male_heights <- survey$Height[survey$Sex == "Male"]
+male_heights_clean <- na.omit(male_heights)
+```
+
+1. Wartość średnia:
+```{r}
+mean_mh <- mean(male_heights_clean)
+mean_mh
+```
+
+2. Odchylenie standardowe:
+```{r}
+sd_mh <- sd(male_heights_clean)
+sd_mh
+```
+
+3. Z-score używając:
+  (i) wzoru z-score:
+```{r}
+male_heights_z_scores <- male_heights_clean
+male_heights_z_scores <- (male_heights_z_scores - mean_mh) / sd_mh
+summary(male_heights_z_scores)
+```
+  (ii) funkcji `scale()`:
+```{r}
+male_heights_z_scores_scale <- scale(male_heights_clean)
+summary(male_heights_z_scores_scale)
+```
+
+Sprawdzam czy wyniki są takie same:
+```{r}
+all.equal(
+  as.vector(male_heights_z_scores), 
+  as.vector(male_heights_z_scores_scale)
+)
+```
+
+4. Pokazanie z-score graficznie:
+```{r}
+hist(
+  male_heights_z_scores,
+  main = "Histogram Z-score dla wzrostu mężczyzn",
+  xlab = "Z-score",
+  ylab = "Częstość",
+  col = "aquamarine",
+  breaks = 20
+)
+```
+
+5. Średnia i odchylenie standardowe z-scores:
+```{r}
+mean(male_heights_z_scores)
+sd(male_heights_z_scores)
+```
+Te wyniki oznaczają, że z-score jest znormalizowany i ma rozkład normalny (`mean ~ 0`, `sd == 1`).
+
+6. Minimum i maksimum z-score:
+```{r}
+min(male_heights_z_scores)
+max(male_heights_z_scores)
+```
+Wartości skrajne są odpowiednio około 2.85 i 2.5 odchyleń standardowych od średniej.
+
+7. Dla wybranych trzech z otrzymanych powyżej wartości z-score, użyj funkcję pnorm().
+```{r}
+male_heights_z_scores[1:3]
+pnorm(c(
+  male_heights_z_scores[1],
+  male_heights_z_scores[2],
+  male_heights_z_scores[3]
+))
+```
+
+Interpretacja:
+
+- 1 wynik oznacza, że około 45.13% danych leży poniżej tej wartości, ponadto z-score jest bliski 0, co oznacza, że wartość jest bliska średniej.
+- 2 wynik oznacza, że około 1.23% danych leży poniżej tej wartości, ponadto wskazuje to, że wartość jest znacznie poniżej średniej.
+- 3 wynik oznacza, że około 4.95% danych leży poniżej tej wartości, ponadto ta wartość jest lekko powyżej poprzedniej wartości
+
+\newpage
+## Zadanie 7 – percentyle, wiek studentów i studentek (IU)
+
+#### Treść
+
+Określić:
+
+  (i) kwartyle,
+  (ii) percentyle (0.32, 0.48 i 0.86) oraz rozstęp ćwiartkowy
+
+dla wieku studentów University od Adelaide (funkcja `quantile()`).
+
+Przedstawić boxploty wieku mężczyzn oraz kobiet.
+
+#### Rozwiązanie
+
+Wczytanie biblioteki `MASS` oraz danych `survey`:
+```{r}
+library(MASS)
+data(survey)
+summary(survey)
+```
+
+(i) Kwartyle:
+```{r}
+quartiles <- quantile(na.omit(survey$Age))
+quartiles
+```
+
+(ii) Percentyle i rozstęp ćwiartkowy:
+```{r}
+percentiles <- quantile(na.omit(survey$Age), probs = c(0.32, 0.48, 0.86))
+percentiles
+```
+
+Rozstęp ćwiartkowy:
+
+```{r}
+iqr <- IQR(na.omit(survey$Age))
+iqr
+```
+Boxploty wieku mężczyzn oraz kobiet:
+
+```{r}
+boxplot(
+  survey$Age ~ survey$Sex,
+  main = "Wiek osoby studenckiej według płci",
+  xlab = "Płeć",
+  ylab = "Wiek",
+  col = c("pink", "blue"),
+  ylim = c(15, 30)
+)
+```

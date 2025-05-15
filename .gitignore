@@ -1,0 +1,5 @@
+Zestaw_*.pdf
+*.log
+*.aux
+.idea
+.vscode
