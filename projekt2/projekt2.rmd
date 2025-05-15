@@ -1,0 +1,540 @@
+---
+title: "Projekt 2"
+subtitle: "Wstęp do Analizy Danych | Politechnika Krakowska"
+author: "Jakub Kapała"
+output: 
+  pdf_document:
+    latex_engine: xelatex
+header-includes: |
+  \usepackage{fancyhdr}
+  \pagestyle{fancy}
+  \fancyhead[L]{\textbf{WdAD - Projekt 2}}
+  \fancyhead[R]{\textbf{Jakub Kapała}}
+---
+
+```{r setup, include=FALSE}
+library(Cairo)
+knitr::opts_chunk$set(dev = "CairoPDF", echo = TRUE)
+Sys.setlocale("LC_CTYPE", "pl_PL.UTF-8")
+```
+\begin{center}
+{\small Numer albumu: 151885} \\[0.1cm]
+{\small Data: `r format(Sys.time(), '%d.%m.%Y')`}
+\end{center}
+\newpage
+\section*{Treść projektu}
+1. Regresja liniowa w R wykorzystuje funkcję \texttt{lm()} do stworzenia modelu regresji.
+Aby przyjrzeć się modelowi, użyj funkcji \texttt{summary()}. Wybierz trzy dowolne próbki z biblioteki \texttt{MASS} i dokonaj analizy regresji przeprowadzając diagnostykę modelu regresji na podstawie wykresów diagnostycznych w R.
+Proszę opisać co oznaczają te wykresy i w jaki sposób można je wykorzystać do sprawdzenia czy założenia modelu są spełnione.
+Funkcja: \texttt{plot(model, which = 1:4)}.
+
+2. Znajdź współczynniki regresji ( i ) minimalizując sumę kwadratów reszt - metoda najmniejszych kwadratów.
+
+\[
+\min \sum (Y_i - \hat{Y}_i)^2 = \min \sum \left( Y_i - (b_0 + b_1 X_i) \right)^2
+\]
+
+\subsection*{Dodatkowo, pokaż:}
+\[
+\sum_{i=1}^{n} (x_i - \bar{x})^2 = \sum_{i=1}^{n} x_i^2 - \frac{\left( \sum_{i=1}^{n} x_i \right)^2}{n},
+\]
+
+\subsection*{Wywnioskuj, że:}
+\[
+\sum_{i=1}^{n} (x_i - \bar{x})(y_i - \bar{y}) = \sum_{i=1}^{n} x_i y_i - \frac{1}{n} \sum_{i=1}^{n} x_i \sum_{i=1}^{n} y_i
+\]
+\[
+\beta_1 = \frac{\mathrm{cov}(x, y)}{\mathrm{var}(x)}
+\]
+
+\newpage
+\section*{1. Zbiór Cars93 z biblioteki \texttt{MASS} - analiza regresji}
+Pierwszą próbką wybraną do analizy regresji jest zbiór \texttt{Cars93} z biblioteki \texttt{MASS}. Zbiór ten zawiera dane dotyczące 93 samochodów osobowych sprzedawanych w USA w 1993 roku. Zawiera on różne cechy samochodów, takie jak cena, moc silnika, liczba miejsc, itp. W tej analizie skoncentruję się na regresji liniowej, aby zbadać zależność między ceną samochodu a jego mocą silnika.
+
+Załadowanie danych, stworzenie modelu regresji:
+```{r}
+library(MASS)
+data(Cars93)
+model_cars93 <- lm(Price ~ Horsepower, data = Cars93)
+```
+
+Podsumowanie modelu:
+```{r}
+summary(model_cars93)
+```
+
+\newpage
+Diagnostyka modelu regresji:
+```{r}
+par(mfrow = c(2, 2))
+plot(model_cars93, which = 1:4)
+```
+
+\textbf{Przeznaczenie wykresów:} Model regresji estymuje zależność ceny samochodu od liczby koni mechanicznych. Wykresy diagnostyczne pomagają ocenić spełnienie założeń modelu:
+\begin{itemize}
+    \item \textbf{Reszty vs wartość dopasowana} – pozwala ocenić liniowość i jednorodność wariancji (homoskedastyczność).
+    \item \textbf{Normal \(Q-Q\)} – ocenia, czy reszty są normalnie rozłożone (zgodne z rozkładem normalnym).
+    \item \textbf{Scale-Location} – sprawdza jednorodność wariancji (bardziej czule niż pierwszy wykres).
+    \item \textbf{Residuals vs Leverage} – pozwala wykryć punkty wpływowe (mające silny wpływ na model).
+\end{itemize}
+Przyglądnijmy się teraz każdemu z wykresów z osobna.
+\newpage
+
+\subsection*{1.1. Wykres 1: Residuals vs Fitted}
+```{r}
+plot(model_cars93, which = 1)
+```
+
+\textbf{Cel:} Ocena liniowości i jednorodności wariancji (homoskedastyczność). 
+
+\textbf{Obserwacje:} Wykres pokazuje wzrost rozrzutu reszt wraz ze wzrostem wartości dopasowanych. Idealnie, punkty powinny być rozłożone losowo wokół linii poziomej (0), co sugeruje, że model dobrze dopasowuje się do danych. W tym przypadku widać pewne odchylenia, co sugeruje \textbf{heteroskedastyczność}, czyli niejednorodność wariancji - oznacza to zmienność błędu zależną od wartości zmiennej objaśniającej. Większość punktów znajduje się w pobliżu zera, co sugeruje, że model dobrze dopasowuje się do danych. Jednakże, niektóre punkty są znacznie oddalone od linii poziomej, co może sugerować obecność punktów wpływowych lub obserwacji odstających - takich jak punkty \texttt{28}, \texttt{58} i \texttt{59}.
+
+\textbf{Wnioski:} Naruszenie założenia homoskedastyczności może prowadzić do błędnych wniosków dotyczących istotności statystycznej współczynników regresji. W takim przypadku można rozważyć transformację zmiennej zależnej lub zastosowanie modeli regresji, które są bardziej odporne na heteroskedastyczność.
+
+\newpage
+
+\subsection*{1.2. Wykres 2: Normal \(Q-Q\) Plot}
+```{r}
+plot(model_cars93, which = 2)
+```
+
+\textbf{Cel:} Ocena zgodności rozkładu reszt z rozkładem normalnym.
+
+\textbf{Obserwacje:} W środkowej części wykresu punkty są blisko linii prostej, co sugeruje, że reszty są w miarę normalnie rozłożone. Jednakże, w końcowych częściach wykresu (lewy i prawy ogon) punkty zaczynają odbiegać od linii prostej, co sugeruje, że rozkład reszt nie jest idealnie normalny. W szczególności, punkt \texttt{59} jest istotnie wyższy niż sugerowałby rozkład normalny.
+
+\textbf{Wnioski:} Reszty nie są idealnie normalnie rozłożone, co może wpływać na wyniki analizy regresji - mogą występować obserwacje odstające (outliers), które zaburzają rozkład.
+
+\newpage
+
+\subsection*{1.3. Wykres 3: Scale - Location}
+```{r}
+plot(model_cars93, which = 3)
+```
+
+\textbf{Cel:} Bardziej czułe sprawdzenie homoskedastyczności
+
+\textbf{Obserwacje:} Wraz z wartościami dopasowanymi rosną wartości standaryzowanych reszt, co jest klasycznym objawem heteroskedastyczności - wariancja rośnie.
+
+\textbf{Wnioski:} Potwierdza to poprzednie przypuszczenie - model narusza założenie stałej wariancji reszt.
+
+\newpage
+
+\subsection*{1.4. Wykres 4: Cook's Distance}
+```{r}
+plot(model_cars93, which = 4)
+```
+
+\textbf{Cel:} Zidentyfikowanie obserwacji mających silny wpływ na model.
+
+\textbf{Obserwacje:} Punkty \(28\), \(48\) i \(59\) mają najwyższe wartości odległości Cooka - są to obserwacje wpływowe. Szczególnie punkty \(28\) i \(59\) - mogą one istotnie zmieniać wynik estymacji, jeśli zostaną usunięte.
+
+\textbf{Wnioski:} Warto rozważyć ponowną analizę modelu z pominięciem tych obserwacji, lub zastosowanie metod odpornych, takich jak np. regresja odporna (robust regression).
+
+\subsection*{Podsumowanie}
+```{r, echo=FALSE}
+cars93_diagnostics <- data.frame(
+  Kwestia = c("Liniowość",
+              "Homoskedastyczność",
+              "Normalność reszt",
+              "Obserwacje wpływowe"),
+  Ocena = c("Częściowo spełniona",
+            "Naruszona",
+            "Naruszona (na końcach)",
+            "Zidentyfikowane"),
+  Komentarz = c("Brak wyraźnych wzorców nieliniowych",
+                "Widoczne zwiększenie wariancji błędu",
+                "Wskazuje na odstające wartości",
+                "28, 48, 59 – warto monitorować")
+)
+knitr::kable(cars93_diagnostics, caption = "Podsumowanie diagnostyki modelu regresji Cars93")
+```
+
+\newpage
+\subsection*{1.5. Wyznaczenie współczynników regresji - metoda najmniejszych kwadratów}
+
+Rozważamy model liniowy:
+
+\[
+Y_i = b_0 + b_1 X_i + \varepsilon_i,
+\]
+
+gdzie:
+
+- \( Y_i \) to cena samochodu (`Price`),
+
+- \( X_i \) to liczba koni mechanicznych (`Horsepower`).
+
+Teraz wyznaczmy współczynniki regresji \( b_0 \) i \( b_1 \) minimalizując sumę kwadratów reszt. Wykorzystajmy do tego następujący wzór:
+\[
+\min \sum (Y_i - \hat{Y}_i)^2 = \min \sum \left( Y_i - (b_0 + b_1 X_i) \right)^2.
+\]
+
+```{r}
+# Dane x i y
+x <- Cars93$Horsepower
+y <- Cars93$Price
+n <- length(x)
+# Krok 1: Średnie
+x_bar <- mean(x)
+y_bar <- mean(y)
+# Krok 2: Składniki wzorów analitycznych
+suma_x2 <- sum(x^2)
+suma_x <- sum(x)
+suma_y <- sum(y)
+suma_xy <- sum(x * y)
+# Pokazujemy wzór wariancji z dwóch składników:
+suma_kwadratow_x <- suma_x2 - (suma_x^2) / n
+# Współczynnik kowariancji:
+suma_kowariancji <- suma_xy - (suma_x * suma_y) / n
+# Wyznaczamy współczynnik nachylenia (b1)
+b1 <- suma_kowariancji / suma_kwadratow_x
+# Wyznaczamy wyraz wolny (b0)
+b0 <- y_bar - b1 * x_bar
+```
+
+Wyniki:
+```{r, echo=FALSE}
+cat("sum((x_i - x̄)^2) =", suma_kwadratow_x, "\n")
+cat("sum((x_i - x̄)(y_i - ȳ)) =", suma_kowariancji, "\n")
+
+coeff <- data.frame(
+  Wspolczynnik = c("b0 (nachylenie)", "b1 (wyraz wolny)"),
+  Wartosc = c(b0, b1)
+)
+knitr::kable(coeff, caption = "Współczynniki regresji Cars93")
+
+cat("Interpretacja: Przeciętnie, cena samochodu rośnie o ok.",
+    round(b1 * 1000, 1), "dolarów za każdy\ndodatkowy koń mechaniczny.\n")
+```
+
+\newpage
+\subsection*{1.6. Dowód algebraiczny - rozkład wariancji (suma kwadratów)}
+
+\[
+\sum_{i=1}^{n} (x_i - \bar{x})^2 = \sum_{i=1}^{n} x_i^2 - \frac{\left( \sum_{i=1}^{n} x_i \right)^2}{n},
+\]
+```{r}
+lhs_var <- sum((x - mean(x))^2)
+rhs_var <- sum(x^2) - (sum(x)^2) / n
+```
+```{r, echo=FALSE}
+cat("sum((x_i - x̄)^2) =", lhs_var, "\n")
+cat("sum(x_i²) - (sum(x_i))²/n =", rhs_var, "\n")
+```
+```{r}
+all.equal(lhs_var, rhs_var)
+```
+\textbf{Wynik:} Obie strony równania są równe, co potwierdza poprawność wzoru.
+\newpage
+\subsection*{1.7. Wyznaczenie wzoru na współczynnik regresji \(\beta_1\)}
+Rozważmy klasyczny model regresji liniowej:
+
+\[
+Y_i = b_0 + b_1 X_i + \varepsilon_i
+\]
+
+Celem jest wyprowadzenie estymatora nachylenia \( \beta_1 \), który minimalizuje sumę kwadratów reszt:
+
+\[
+\min \sum (Y_i - (b_0 + b_1 X_i))^2
+\]
+
+Z rachunku różniczkowego wiadomo, że minimalizując sumę kwadratów, otrzymujemy estymator:
+
+\[
+\beta_1 = \frac{\sum_{i=1}^{n} (x_i - \bar{x})(y_i - \bar{y})}{\sum_{i=1}^{n} (x_i - \bar{x})^2}
+\]
+
+Z własności algebry sum można rozwinąć licznik tego wzoru:
+
+\[
+\sum_{i=1}^{n} (x_i - \bar{x})(y_i - \bar{y}) = \sum_{i=1}^{n} x_i y_i - \frac{1}{n} \sum_{i=1}^{n} x_i \sum_{i=1}^{n} y_i
+\]
+
+Analogicznie, mianownik można zapisać jako:
+\[
+\sum_{i=1}^{n} (x_i - \bar{x})^2 = \sum_{i=1}^{n} x_i^2 - \frac{(\sum_{i=1}^{n} x_i)^2}{n}
+\]
+
+Z definicji kowariancji i wariancji:
+
+\[
+\mathrm{cov}(x, y) = \frac{1}{n} \sum_{i=1}^{n} (x_i - \bar{x})(y_i - \bar{y})
+\]
+
+\[
+\mathrm{var}(x) = \frac{1}{n} \sum_{i=1}^{n} (x_i - \bar{x})^2
+\]
+
+Podstawiając je do wzoru na \( \beta_1 \):
+
+\[
+\beta_1 = \frac{\sum (x_i - \bar{x})(y_i - \bar{y})}{\sum (x_i - \bar{x})^2}
+= \frac{n \cdot \mathrm{cov}(x, y)}{n \cdot \mathrm{var}(x)} = \frac{\mathrm{cov}(x, y)}{\mathrm{var}(x)}
+\]
+\textbf{Wynik:} Otrzymaliśmy wzór na współczynnik regresji \( \beta_1 \) jako stosunek kowariancji do wariancji.
+
+\[
+\beta_1 = \frac{\mathrm{cov}(x, y)}{\mathrm{var}(x)}
+\]
+
+czyli nachylenie prostej regresji jest równe stosunkowi kowariancji zmiennych do wariancji zmiennej niezależnej.
+\newpage
+\section*{2. Zbiór USCrime z biblioteki \texttt{MASS} - analiza regresji}
+
+Drugą próbkę wybraną do analizy regresji stanowi zbiór \texttt{UScrime} z biblioteki \texttt{MASS}. Dane te dotyczą przestępczości w 47 stanach USA i zawierają wiele zmiennych społeczno-ekonomicznych, takich jak nierówność dochodów, ilość przestępstw na osobę, wydatki na policję czy też średnią liczbę lat nauki. W tej analizie skoncentruję się na badaniu wpływu wskaźnika nierówności dochodów (`Ineq`) na przestępczość na mieszkańca (`y`).
+
+Załadowanie danych i stworzenie modelu regresji:
+```{r}
+library(MASS)
+data(UScrime)
+model_uscrime <- lm(y ~ Ineq, data = UScrime)
+```
+Podsumowanie modelu:
+```{r}
+summary(model_uscrime)
+```
+Diagnostyka modelu regresji:
+```{r}
+par(mfrow = c(2, 2))
+plot(model_uscrime, which = 1:4)
+```
+
+\textbf{Analiza wykresów:} Model regresji estymuje zależność liczby przestępstw od wskaźnika nierówności dochodów w danym stanie. Wykresy diagnostyczne umożliwiają ocenę spełnienia kluczowych założeń regresji.
+
+\textbf{Residuals vs Fitted} - wykres pokazuje wartości reszt w miarę losowo rozłożone wokół zera, co sugeruje, że model dobrze dopasowuje się do danych. Nie widać wyraźnych wzorców nieliniowych, choć niektóre punkty są bardziej oddalone od linii poziomej - \(2\) oraz \(26\), co może sugerować obecność punktów wpływowych, a w konsekwencji nieliniowość czy też heteroskedastyczność.
+
+\textbf{Normal \(Q-Q\)} - punkty w pewien sposób odbiegają od linii, zwłaszcza na końcach rozkładu - punkt \(26\). Sugeruje to, że dla tych danych nie można przyjąć założenia o normalności rozkładu.
+
+\textbf{Scale-Location} - widzimy tutaj niewielką tendencje do danych wzrostowych, co sugeruje niejednorodność wariancji - wartości reszt mogą rosnąć wraz z wartością dopasowaną.
+
+\textbf{Cook's Distance} - punkty \(4\), \(26\) oraz \(27\) odbiegają od reszty, co sugeruje, że mogą mieć one silny wpływ na model. Warto je monitorować i rozważyć ich usunięcie z analizy.
+
+\subsection*{Podsumowanie}
+```{r, echo=FALSE}
+uscrime_diagnostics <- data.frame(
+  Kwestia = c("Liniowość",
+              "Homoskedastyczność",
+              "Normalność reszt",
+              "Obserwacje wpływowe"),
+  Ocena = c("Możliwe naruszenie",
+            "Naruszona",
+            "Naruszona",
+            "Zidentyfikowane"),
+  Komentarz = c("Lekkie zakrzywienie w trendzie liniowym",
+                "Widoczne zwiększenie wariancji błędu",
+                "Wskazuje na odstające wartości, zwłaszcza na końcach",
+                "4, 26, 27– warto monitorować")
+)
+knitr::kable(uscrime_diagnostics, caption = "Podsumowanie diagnostyki modelu regresji UScrime")
+```
+
+\newpage
+
+\subsection*{2.1. Wyznaczenie współczynników regresji - metoda najmniejszych kwadratów}
+
+Rozważamy model liniowy:
+
+\[
+Y_i = b_0 + b_1 X_i + \varepsilon_i,
+\]
+
+gdzie:
+
+- \( Y_i \) to wskaźnik przestępczości (`y`),
+
+- \( X_i \) to wskaźnik nierówności dochodów w stanie (`Ineq`).
+
+Teraz wyznaczmy współczynniki regresji \( b_0 \) i \( b_1 \) minimalizując sumę kwadratów reszt. Wykorzystajmy do tego następujący wzór:
+\[
+\min \sum (Y_i - \hat{Y}_i)^2 = \min \sum \left( Y_i - (b_0 + b_1 X_i) \right)^2.
+\]
+
+```{r}
+# Dane x i y
+x <- UScrime$Ineq
+y <- UScrime$y
+n <- length(x)
+# Krok 1: Średnie
+x_bar <- mean(x)
+y_bar <- mean(y)
+# Krok 2: Składniki wzorów analitycznych
+suma_x2 <- sum(x^2)
+suma_x <- sum(x)
+suma_y <- sum(y)
+suma_xy <- sum(x * y)
+# Pokazujemy wzór wariancji z dwóch składników:
+suma_kwadratow_x <- suma_x2 - (suma_x^2) / n
+# Współczynnik kowariancji:
+suma_kowariancji <- suma_xy - (suma_x * suma_y) / n
+# Wyznaczamy współczynnik nachylenia (b1)
+b1 <- suma_kowariancji / suma_kwadratow_x
+# Wyznaczamy wyraz wolny (b0)
+b0 <- y_bar - b1 * x_bar
+```
+
+Wyniki:
+```{r, echo=FALSE}
+cat("sum((x_i - x̄)^2) =", suma_kwadratow_x, "\n")
+cat("sum((x_i - x̄)(y_i - ȳ)) =", suma_kowariancji, "\n")
+
+uscrime_coeff <- data.frame(
+  Wspolczynnik = c("b0 (wyraz wolny)", "b1 (nachylenie)"),
+  Wartosc = round(c(b0, b1), 4)
+)
+knitr::kable(uscrime_coeff, caption = "Współczynniki regresji USCrime (y ~ Ineq)")
+
+cat("Interpretacja: Przeciętnie, przy wzroście wskaźnika nierówności dochodów o 1 punkt,\n",
+    "wskaźnik przestępczości rośnie o ok.", - round(b1, 2), "jednostek.\n")
+```
+
+\newpage
+\subsection*{. Dowód algebraiczny - rozkład wariancji (suma kwadratów)}
+
+\[
+\sum_{i=1}^{n} (x_i - \bar{x})^2 = \sum_{i=1}^{n} x_i^2 - \frac{\left( \sum_{i=1}^{n} x_i \right)^2}{n},
+\]
+```{r}
+lhs_var <- sum((x - mean(x))^2)
+rhs_var <- sum(x^2) - (sum(x)^2) / n
+```
+```{r, echo=FALSE}
+cat("sum((x_i - x̄)^2) =", lhs_var, "\n")
+cat("sum(x_i²) - (sum(x_i))²/n =", rhs_var, "\n")
+```
+```{r}
+all.equal(lhs_var, rhs_var)
+```
+\textbf{Wynik:} Obie strony równania są równe, co potwierdza poprawność wzoru.
+\newpage
+
+\section*{3. Zbiór \texttt{road} z biblioteki \texttt{MASS} - analiza regresji}
+
+Jako ostatni dataset wybrałem zbiór \texttt{road} z biblioteki \texttt{MASS}. Dane te przedstawiają liczbę ofiar śmiertelnych w wypadkach drogowych w 25 stanach USA, a także liczbę kierowców, gęstość zaludnienia, długość dróg wiejskich, temperatury, zużycie paliwa oraz inne czynniki mogące mieć wpływ na wypadkowość.
+W tej analizie skupimy się na zbadaniu zależności między liczbą kierowców (`drivers`) a liczbą zgonów w wypadkach drogowych (`deaths`).
+
+Załadowanie danych i stworzenie modelu regresji:
+```{r}
+library(MASS)
+data(road)
+model_road <- lm(deaths ~ drivers, data = road)
+```
+Podsumowanie modelu:
+```{r}
+summary(model_road)
+```
+Diagnostyka modelu regresji:
+```{r}
+par(mfrow = c(2, 2))
+plot(model_road, which = 1:4)
+```
+
+\textbf{Analiza wykresów:} Model regresji estymuje zależność liczby kierowców od liczby zgonów w wypadkach drogowych. Wykresy diagnostyczne umożliwiają ocenę spełnienia kluczowych założeń regresji.
+
+\textbf{Residuals vs Fitted} - na wykresie obserwujemy, że punkty nie są rozłożone losowo wokół poziomej linii zera. Widać pewien wzór, sugerujący potencjalną nieliniowość w danych. Dodatkowo, wydaje się, że rozrzut reszt zwiększa się wraz ze wzrostem wartości dopasowanych, co może wskazywać na heteroskedastyczność. Punkty \(Maine\) oraz \(Mass\) wydają się znacznie odbiegać od reszty.
+
+\textbf{Normal \(Q-Q\)} - punkty w pewien sposób odbiegają od linii, zwłaszcza na końcach rozkładu - punkt \(Maine\). Sugeruje to, że dla tych danych nie można przyjąć założenia o normalności rozkładu.
+
+\textbf{Scale-Location} - widzimy tutaj wzrost pierwiastka kwadratu standaryzowanych reszt wraz ze wzrostem wartości dopasowanych, co sugeruje niejednorodność wariancji, ponadto punkty \(Maine\) oraz \(Mass\) wydają się mieć ponownie wyższe wartości na tym wykresie.
+
+\textbf{Cook's Distance} - punkty \(Maine\), \(Ill\) oraz \(Calif\) wydają się mieć szczególnie duży wpływ na model. Warto je monitorować i rozważyć ich usunięcie z analizy.
+
+\newpage
+
+\subsection*{Podsumowanie wykresów diagnostycznych}
+```{r, echo=FALSE}
+road_diagnostics <- data.frame(
+  Kwestia = c("Liniowość",
+              "Homoskedastyczność",
+              "Normalność reszt",
+              "Obserwacje wpływowe"),
+  Ocena = c("Naruszona",
+            "Naruszona",
+            "Naruszona",
+            "Zidentyfikowane"),
+  Komentarz = c("Widoczny wzór nieliniowy i zmiana wariancji",
+                "Rozrzut reszt wraz ze wzrostem wartości dopasowanych",
+                "Odstępstwa od normalności, Maine oraz Mass znacznie odstają",
+                "Maine, Ill oraz Calif wykazują szczególnie duży wpływ")
+)
+knitr::kable(road_diagnostics, caption = "Podsumowanie diagnostyki modelu regresji road")
+```
+
+\newpage
+
+\subsection*{3.1. Wyznaczenie współczynników regresji - metoda najmniejszych kwadratów}
+
+Rozważamy model liniowy:
+
+\[
+Y_i = b_0 + b_1 X_i + \varepsilon_i,
+\]
+
+gdzie:
+
+- \( Y_i \) to liczba zgonów w wypadkach drogowych (`deaths`),
+
+- \( X_i \) to liczba kierowców w stanie (`drivers` - w dziesiątkach tysięcy).
+
+Teraz wyznaczmy współczynniki regresji \( b_0 \) i \( b_1 \) minimalizując sumę kwadratów reszt. Wykorzystajmy do tego następujący wzór:
+\[
+\min \sum (Y_i - \hat{Y}_i)^2 = \min \sum \left( Y_i - (b_0 + b_1 X_i) \right)^2.
+\]
+
+```{r}
+# Dane x i y
+x <- road$drivers
+y <- road$deaths
+n <- length(x)
+# Krok 1: Średnie
+x_bar <- mean(x)
+y_bar <- mean(y)
+# Krok 2: Składniki wzorów analitycznych
+suma_x2 <- sum(x^2)
+suma_x <- sum(x)
+suma_y <- sum(y)
+suma_xy <- sum(x * y)
+# Pokazujemy wzór wariancji z dwóch składników:
+suma_kwadratow_x <- suma_x2 - (suma_x^2) / n
+# Współczynnik kowariancji:
+suma_kowariancji <- suma_xy - (suma_x * suma_y) / n
+# Wyznaczamy współczynnik nachylenia (b1)
+b1 <- suma_kowariancji / suma_kwadratow_x
+# Wyznaczamy wyraz wolny (b0)
+b0 <- y_bar - b1 * x_bar
+```
+
+Wyniki:
+```{r, echo=FALSE}
+cat("sum((x_i - x̄)^2) =", suma_kwadratow_x, "\n")
+cat("sum((x_i - x̄)(y_i - ȳ)) =", suma_kowariancji, "\n")
+
+road_coeff <- data.frame(
+  Wspolczynnik = c("b0 (wyraz wolny)", "b1 (nachylenie)"),
+  Wartosc = round(c(b0, b1), 4)
+)
+knitr::kable(road_coeff, caption = "Współczynniki regresji road (deaths ~ drivers)")
+
+cat("Interpretacja: Przeciętnie, liczba zgonów w wypadkach drogowych wzrasta o około",
+    round(b1, 2), "na każde\ndodatkowe 10 000 kierowców w stanie.\n")
+```
+
+\newpage
+\subsection*{3.2. Dowód algebraiczny - rozkład wariancji (suma kwadratów)}
+
+\[
+\sum_{i=1}^{n} (x_i - \bar{x})^2 = \sum_{i=1}^{n} x_i^2 - \frac{\left( \sum_{i=1}^{n} x_i \right)^2}{n},
+\]
+```{r}
+lhs_var <- sum((x - mean(x))^2)
+rhs_var <- sum(x^2) - (sum(x)^2) / n
+```
+```{r, echo=FALSE}
+cat("sum((x_i - x̄)^2) =", lhs_var, "\n")
+cat("sum(x_i²) - (sum(x_i))²/n =", rhs_var, "\n")
+```
+```{r}
+all.equal(lhs_var, rhs_var)
+```
+\textbf{Wynik:} Obie strony równania są równe, co potwierdza poprawność wzoru.
+\newpage
