@@ -1,0 +1,382 @@
+---
+title: "Laboratorium 2"
+subtitle: "Wstęp do Analizy Danych | Politechnika Krakowska"
+author: "Jakub Kapała"
+output: 
+  pdf_document:
+    latex_engine: xelatex
+header-includes: |
+  \usepackage{fancyhdr}
+  \pagestyle{fancy}
+  \fancyhead[L]{\textbf{WdAD - Sprawozdanie - Laboratorium 2}}
+  \fancyhead[R]{\textbf{Jakub Kapała}}
+---
+
+```{r setup, include=FALSE}
+library(Cairo)
+knitr::opts_chunk$set(dev = "CairoPDF", echo = TRUE)
+Sys.setlocale("LC_CTYPE", "pl_PL.UTF-8")
+```
+\begin{center}
+{\small Numer albumu: 151885} \\[0.1cm]
+{\small Data: `r format(Sys.time(), '%d.%m.%Y')`}
+\end{center}
+\newpage
+## Zadanie 1 - rozkład wykładniczy
+#### Treść
+Odległości między kolejnymi zdarzeniami w procesach losowych o zdarzeniach niezależnych i występujących jednorodnie są opisywane rozkładem wykładniczym. Dobrym przykładem są odstępy czasu pomiędzy kolejnymi uderzeniami kropel deszczu o szybę (przy założeniu, że intensywność deszczu nie zmienia się w czasie). Zasymulować opisane zjawisko korzystając z funkcji `runif()` i porównać wynik ze znanym rozkładem prawdopodobieństwa:
+\[
+f(x) = \lambda e^{-\lambda x},
+\]
+gdzie \(\lambda\) oznacza tempo procesu.
+
+-  Rozważyć czasy od \(t = 0\) do \(t = 10\,000 \, \text{s}\). Przyjąć, że w ciągu sekundy o szybę uderza
+średnio \(\lambda = 5\) kropel. Co \(\Delta t = 0.01 \, \text{s}\) sprawdzić, czy w minionym odstępie czasu \(\Delta t\) o szybę
+uderzyła kropla, tzn. wylosować zmienną losową z prawdopodobieństwem \(\lambda \cdot 0.01 = 0.05\).
+-  Przekształcić powyższe dane do postaci czasów t, kiedy krople padały na szybę i ostatecznie
+do postaci odstępów między tymi zdarzeniami. Znaleźć średnią i odchylenie standardowe.
+-  Przedstawić dane na histogramie i porównać graficznie z wykresem powyższego wzoru.
+
+
+#### Rozwiązanie
+Parametry symulacji:
+```{r}
+t1 <- 10000 # czas symulacji
+lambda <- 5 # srednia ilosc kropel na sekunde
+delta_t <- 0.01 # odstep czasowy
+probability <- lambda * delta_t # prawdopodobienstwo zmiennej losowej
+set.seed(151885) # ustawienie ziarna dla powtarzalności wyników
+```
+Symulacja uderzeń kropli:
+```{r}
+n <- t1 / delta_t # liczba kroków czasowych
+hits <- runif(n) < probability # losowanie zmiennej losowej
+hits[1:10]
+```
+Wartości `TRUE` oznaczają, ze kropla spadła w danym kroku, a `FALSE` ze nie spadła. Jak widać kropla najpierw uderza w 1 kroku czasowym, a potem przez 9 kroków nie pada.
+
+Przekształcenie do czasów \(t\), kiedy padały krople na szybę
+```{r}
+times <- (1:n)[hits] * delta_t  # przeksztalcenie do czasow t
+times[1:10]
+```
+
+Odstępy między zdarzeniami:
+```{r}
+intervals <- diff(times) # obliczenie odstepow
+intervals[1:10]
+```
+\newpage
+Obliczenie średniej i odchylenia standardowego:
+```{r}
+mean_intervals <- mean(intervals) # srednia
+sd_intervals <- sd(intervals) # odchylenie standardowe
+mean_intervals
+sd_intervals
+```
+Przedstawienie danych do histogramie i porównanie z wykresem \(f(x) = \lambda e^{-\lambda x}\):
+```{r}
+hist(
+  intervals,
+  main = "Histogram odstępów między kroplami",
+  xlab = "Odstęp czasu (s)", col = "blue",
+  ylab = "Gęstość",
+  breaks = 40,
+  probability = TRUE
+)
+curve(lambda * exp(-lambda * x), col = "red", lwd = 2, add = TRUE)
+```
+
+\newpage
+## Zadanie 2
+#### Treść
+Przedstaw na wykresach następujące rozkłady:
+
+1. Dwumianowy
+2. Hipergeometryczny
+3. Chi-kwadrat
+4. Wykładniczy
+5. Weibull
+
+W zadaniach 2.1 i 2.2 ponadto porównaj histogram dla losowej próbki danych o danym rozkładzie prawdopodobieństwa (`rbinom`, `rhyper`) z wykresami rozkładów (`dbinom`, `dhyper`).
+
+#### Rozwiązanie
+
+1. Rozkład dwumianowy:
+```{r}
+n <- 1000 # liczba prob
+p <- 0.25 # prawdopodobienstwo sukcesu
+hist(rbinom(n, n, p), breaks = 20, probability = TRUE,
+     main = "Histogram rozkładu dwumianowego",
+     xlab = "Liczba sukcesów",
+     ylab = "Gęstość",
+     col = "blue")
+x <- 0:n
+points(x, dbinom(x, n, p), col = "red", pch = 20)
+```
+
+\newpage
+
+2. Rozkład hipergeometryczny:
+```{r}
+k <- 50 # liczba sukcesow w populacji
+N <- 500 # liczba elementow w populacji
+n <- 100 # liczba losowanych elementow
+n_samples <- 1000 # liczba probek do wygenerowania
+hist(rhyper(n_samples, k, N - k, n), breaks = 20, probability = TRUE,
+     main = "Histogram rozkładu hipergeometrycznego",
+     xlab = "Liczba sukcesów",
+     ylab = "Gęstość",
+     col = "blue")
+x <- 0:min(k, n)
+points(x, dhyper(x, k, N - k, n), col = "red", pch = 20)
+```
+\newpage
+
+3. Rozkład chi-kwadrat:
+```{r}
+n <- 1000 # liczba probek
+df <- 5 # liczba stopni swobody
+hist(rchisq(n, df), breaks = 20, probability = TRUE,
+     main = "Histogram rozkładu chi-kwadrat",
+     xlab = "Wartość",
+     ylab = "Gęstość",
+     col = "blue")
+```
+
+\newpage
+
+4. Rozkład wykładniczy:
+```{r}
+n <- 1000 # liczba probek
+lambda <- 0.5 # odwrotnosc parametru skali rozkładu
+hist(rexp(n, lambda), breaks = 20, probability = TRUE,
+     main = "Histogram rozkładu wykładniczego",
+     xlab = "Wartość",
+     ylab = "Gęstość",
+     col = "blue")
+```
+\newpage
+
+5. Rozkład Weibulla:
+```{r}
+n <- 1000 # liczba probek
+k <- 1.5 # parametr ksztaltu
+lambda <- 1 # parametr skali
+hist(rweibull(n, k, lambda), breaks = 20, probability = TRUE,
+     main = "Histogram rozkładu Weibulla",
+     xlab = "Wartość",
+     ylab = "Gęstość",
+     col = "blue")
+```
+
+\newpage
+
+## Zadanie 3 – matrix(), for(), apply()
+#### Treść
+Za pomocą polecenia `matrix` utwórz macierz \(4 \times 5\). Następnie w pętli `for` wypełnij ją liczbami tak, aby stanowiła tabliczkę mnożenia, tzn. aby w \(i\)-tym wierszu, w \(j\)-tej kolumnie znajdowała się liczba \(ij\). Korzystając z polecenia `apply` znajdź:
+
+- wektor średnich wartości w poszczególnych wierszach,
+- wektor sum kolejnych kolumn.
+
+#### Rozwiązanie
+
+Tworzenie macierzy \(4 \times 5\):
+```{r}
+N <- 4
+M <- 5
+mat <- matrix(0, nrow = N, ncol = M)
+mat
+```
+Wypełnianie jej liczbami \(ij\):
+```{r}
+for (i in 1:N) {
+  for (j in 1:M) {
+    mat[i, j] <- i * j
+  }
+}
+mat
+```
+Znalezienie wektora średnich wartości w poszczególnych wierszach:
+```{r}
+row_means <- apply(mat, 1, mean)
+row_means
+```
+Znalezienie wektora sum kolejnych kolumn:
+```{r}
+col_sum <- apply(mat, 2, sum)
+col_sum
+```
+\newpage
+## Zadanie 4 – skośność i kurtoza
+#### Treść
+Za pomocą polecenia `function` zdefiniuj funkcje obliczające dla podanego wektora danych ich skośność oraz kurtozę. Definicje odpowiednio skośności oraz kurtozy nadwyżkowej są następujące:
+\[
+\frac{m_3}{\sigma^3} = \left\langle \left( \frac{x - \langle x \rangle}{\sigma} \right)^3 \right\rangle 
+\approx \frac{\frac{1}{n} \sum_{i=1}^{n} (x_i - \langle x \rangle)^3}
+{\left[ \frac{1}{n-1} \sum_{i=1}^{n} (x_i - \langle x \rangle)^2 \right]^{3/2}}
+\]
+
+\[
+\frac{m_4}{\sigma^4} - 3 = \left\langle \left( \frac{x - \langle x \rangle}{\sigma} \right)^4 \right\rangle - 3 
+\approx \frac{\frac{1}{n} \sum_{i=1}^{n} (x_i - \langle x \rangle)^4}
+{\left[ \frac{1}{n-1} \sum_{i=1}^{n} (x_i - \langle x \rangle)^2 \right]^2} - 3
+\]
+
+#### Rozwiązanie
+Definicja funkcji do obliczania skośności:
+```{r}
+skew <- function(x) {
+  n <- length(x)
+  mean_x <- mean(x)
+  sd_x <- sd(x)
+  m3 <- sum((x - mean_x)^3) / n
+  skew <- m3 / (sd_x^3)
+  skew
+}
+```
+Definicja funkcji do obliczania kurtozy:
+```{r}
+kurtosis <- function(x) {
+  n <- length(x)
+  mean_x <- mean(x)
+  sd_x <- sd(x)
+  m4 <- sum((x - mean_x)^4) / n
+  kurtosis <- (m4 / (sd_x^4)) - 3
+  kurtosis
+}
+```
+Przykład użycia funkcji:
+```{r}
+x <- rnorm(1000) # losowe dane z rozkładu normalnego
+skewness <- skew(x) # obliczenie skosnosci
+skewness
+kurtosis_value <- kurtosis(x) # obliczenie kurtozy
+kurtosis_value
+```
+
+\newpage
+## Zadanie 5 – centralne twierdzenie graniczne
+#### Treść
+Badamy rozkład próbkowy średniej z \(n\) zmiennych losowych o rozkładach z zadania 1 dla \(N\) replikacji.
+
+a. Zająć się najpierw rozkładem dwumianowym z \(k = 100\) i \(p = 0.25\). Niech \(N = 100000\)
+i \(n = 2\). Umieścić liczby losowe o rozkładzie dwumianowym w macierzy \(n \times N\), a następnie
+znaleźć średnie kolumn. Przedstawić histogram danych. Znaleźć ich średnią, odchylenie standardowe, skośność i kurtozę.
+b. Rozważyć przypadek rozkładu wykładniczego z \(\lambda = 1\) i przestawić histogramy dla \(n = 1, 2, 10, 50\) na wspólnym wykresie. Liczba replikacji \(N = 100000\). Wyciągnąć wnioski.
+c. Dla powyższego rozkładu wykładniczego wyznaczyć skośność i kurtozę dla wszystkich
+\(n \in [1, 100]\). Przedstawić je na wykresie.
+d. Wykonać zadania b)-c) dla pozostałych rozkładów z Zadania 2.
+
+
+#### Rozwiązanie
+a) rozkład dwumianowy z \(k = 100\) i \(p = 0.25\):
+
+Deklaracja parametrów:
+```{r}
+k <- 100
+p <- 0.25
+N <- 100000
+n <- 2
+```
+Generowanie macierzy \(n \times N\):
+```{r}
+data_binom <- matrix(rbinom(n * N, k, p), nrow = n, ncol = N)
+```
+Znalezienie średnich kolumn:
+```{r}
+means_binom <- apply(data_binom, 2, mean)
+```
+Przedstawienie histogramu:
+```{r}
+hist(means_binom, breaks = 50, probability = TRUE,
+     main = "Histogram średnich dla rozkładu dwumianowego",
+     xlab = "Średnia",
+     ylab = "Gęstość",
+     col = "blue")
+```
+Obliczenie średniej, odchylenia standardowego, skośności i kurtozy:
+```{r}
+mean_binom <- mean(means_binom)
+mean_binom
+sd_binom <- sd(means_binom)
+sd_binom
+skew_binom <- skew(means_binom)
+skew_binom
+kurtosis_binom <- kurtosis(means_binom)
+kurtosis_binom
+```
+\newpage
+
+b) rozkład wykładniczy z \(\lambda = 1\):
+
+Deklaracja parametrów:
+```{r}
+lambda = 1
+N <- 100000
+n_values <- c(1, 2, 10, 50)
+```
+Generowanie histogramów dla różnych wartości \(n\):
+```{r}
+colors <- rainbow(length(n_values))
+
+# Pusty wykres
+plot(
+  NA, xlim = c(0, 2.5), ylim = c(0, 3),
+  main = "Histogramy średnich dla różnych n",
+  xlab = "Średnia", ylab = "Gęstość"
+)
+
+# Histogram dla n = 1, 2, 10, 50
+for (i in seq_along(n_values)) {
+  n <- n_values[i]
+  data_exp <- matrix(rexp(n * N, lambda), nrow = n, ncol = N)
+  means_exp <- apply(data_exp, 2, mean)
+  hist(
+    means_exp, breaks = 100, probability = TRUE,
+    col = adjustcolor(colors[i], alpha.f = 0.5),
+    border = colors[i], add = TRUE
+  )
+}
+
+# Legenda
+legend(
+  "topright", legend = paste("n =", n_values),
+  fill = adjustcolor(colors, alpha.f = 0.5),
+  border = colors, inset = 0.02
+)
+```
+\newpage
+
+c) Wyznaczenie skośności i kurtozy dla wszystkich \(n \in [1, 100]\) oraz ich przedstawienie na wykresie:
+
+Deklaracja parametrów:
+```{r}
+n_values <- 1:100
+skew_values <- numeric(length(n_values))
+kurtosis_values <- numeric(length(n_values))
+N = 100000
+```
+
+Wyznacznie skośności i kurtozy dla każdego \(n \in [1, 100]\):
+```{r}
+for (n in n_values) {
+  data_exp <- matrix(rexp(n * N, lambda), nrow = n, ncol = N)
+  means_exp <- apply(data_exp, 2, mean)
+  skew_values[n] <- skew(means_exp)
+  kurtosis_values[n] <- kurtosis(means_exp)
+}
+
+plot(
+  n_values, skew_values, type = "l", col = "blue",
+  main = "Skośność i kurtoza dla rozkładu wykładniczego",
+  xlab = "n", ylab = "Wartość", ylim = c(-0.05, 2.5),
+)
+lines(n_values, kurtosis_values, type = "l", col = "red")
+grid(col = "gray", lty = "dotted")
+legend(
+  "topright", legend = c("Skośność", "Kurtoza"),
+  col = c("blue", "red"), lty = 1, inset = 0.02,
+  text.width = max(strwidth(c("Skośność", "Kurtoza"))) * 1.2,
+)
+```
