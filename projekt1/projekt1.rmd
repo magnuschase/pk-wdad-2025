@@ -59,8 +59,13 @@ Użyj metody bootstrap do konstrukcji przedziałów ufności:
 and the 95% sample quantile as the upper bound (alpha = 10%, so alpha/2 = 5%). 
 Construct 90% and 95% bootstrap intervals.
 
+\subsection*{Dodatkowo:}
+
+Wybierz trzy dowolne dane próbkowe z biblioteki \texttt{MASS}. Opisz wybrane przez Ciebie dane. Zbadaj normalność próbki. Oblicz przedziały ufności dla średniej, standardowego odchylenia oraz wariancji.
+
 \newpage
-\section*{a) Estymacja zarobków, wyliczenie przedziałów ufności}
+\section*{1. Analiza zarobków studentów}
+\section*{1.1. Estymacja zarobków, wyliczenie przedziałów ufności}
 
 Zakładam, że zarobki mają rozkład normalny z nieznaną średnią populacji i ze standardowym odchyleniem $15,000$. Dokonuje zatem estymacji średniej zarobków studentów, którzy niedawno ukończyli studia.
 
@@ -108,7 +113,7 @@ cat("Przedział ufności 95%: [", round(ci_95[1], 2), ", ", round(ci_95[2], 2), 
 ```
 
 \newpage
-\section*{b) Estymacja odchylenia standardowego i średniej zarobków z próbki, przybliżenie przedziałów ufności}
+\section*{1.2. Estymacja odchylenia standardowego i średniej zarobków z próbki, przybliżenie przedziałów ufności}
 
 Tym razem nie zakładam, że zarobki mają rozkład normalny. Nie znam także średniej populacji ani odchylenia standardowego. Dokonuję estymacji odchylenia standardowego z próbki:
 ```{r}
@@ -158,7 +163,7 @@ qqline(data_sample, col = "red")
 ```
 Wykres kwantyl-kwantyl (\(QQ\)-plot) pokazuje, że dane nie są zgodne z rozkładem normalnym - widać na nim odchylenia od linii prostej. Oznacza to, że przedziały ufności wyznaczone poprzez \(t\)-test są jedynie aproksymacją.
 \newpage
-\section*{c) Użycie metody bootstrap do konstrukcji przedziałów ufności}
+\section*{1.3. Użycie metody bootstrap do konstrukcji przedziałów ufności}
 
 Używam metody bootstrap do konstrukcji przedziałów ufności. Najpierw deklaruje zmienne:
 ```{r}
@@ -211,7 +216,7 @@ knitr::kable(ci_df, caption = "Porównanie przedziałów ufności (bootstrap vs 
 ```
 
 \newpage
-\section*{Podsumowanie}
+\section*{1.4. Podsumowanie analizy zarobków studentów}
 Na podstawie przeprowadzonych analiz można zauważyć, że estymacja średniej zarobków studentów, którzy niedawno ukończyli studia, różni się w zależności od zastosowanej metody.
 Przedziały ufności uzyskane z metody bootstrap są węższe niż te uzyskane z \(t\)-testu, co sugeruje, że metoda bootstrap może być bardziej precyzyjna w tym przypadku. Histogram i wykres kwantyl-kwantyl pokazują, że dane nie są zgodne z rozkładem normalnym, co może wpływać na dokładność estymacji.
 Warto jednak zauważyć, że metoda bootstrap jest bardziej czasochłonna i wymaga większej mocy obliczeniowej, dlatego w praktyce często stosuje się \(t\)-test jako szybszą alternatywę.
@@ -228,4 +233,389 @@ hist(data_sample,
 abline(v = ci_90_bootstrap, col = "blue", lty = 2)
 abline(v = ci_95_bootstrap, col = "red", lty = 3)
 legend("topright", legend = c("90% CI (bootstrap)", "95% CI (bootstrap)"), col = c("blue", "red"), lty = c(2, 3))
+```
+
+\newpage
+\section*{2. Zbiór Cars93 z biblioteki \texttt{MASS}}
+Pierwszą próbką wybraną do badania normalności próbki, obliczania przedziały ufności dla średniej, standardowego odchylenia oraz wariancji, jest zbiór \texttt{Cars93} z biblioteki \texttt{MASS}. Zbiór ten zawiera dane dotyczące 93 samochodów osobowych sprzedawanych w USA w 1993 roku. Zawiera on różne cechy samochodów, takie jak cena, moc silnika, liczba miejsc, itp. W tej analizie skoncentruję się na wartości \texttt{Price} (cena samochodu).
+
+\section*{2.1. Analiza normalności próbki}
+
+Najpierw sprawdzę normalność rozkładu ceny samochodów (\texttt{Price}) w zbiorze \texttt{Cars93} przy użyciu histogramu, wykresu kwantyl-kwantyl oraz testu Shapiro-Wilka.
+
+Wczytanie danych:
+```{r}
+library(MASS)
+data(Cars93)
+```
+\newpage
+```{r}
+# Histogram
+hist(Cars93$Price,
+     main = "Histogram ceny samochodów",
+     xlab = "Cena (tys. USD)",
+     ylab = "Częstość",
+     col = "lightblue",
+     border = "black")
+```
+Na histogramie możemy zauważyć, że rozkład ceny samochodów jest asymetryczny prawostronny (prawostronnie skośny), co sugeruje, że ceny są bardziej skoncentrowane w niższych wartościach - zwłaszcza w przedziale $[0, 20000]$ USD.
+
+\newpage
+```{r}
+# QQ-plot
+qqnorm(Cars93$Price, 
+       main = "QQ-plot ceny samochodów", 
+       xlab = "Teoretyczne kwantyle", 
+       ylab = "Empiryczne kwantyle")
+qqline(Cars93$Price, col = "red")
+```
+Wykres kwantyl-kwantyl (\(QQ\)-plot) pokazuje, że dane nie są zgodne z rozkładem normalnym - widać na nim znaczne odchylenia od linii prostej, zwłaszcza na końcach (ogony rozkładu).
+
+
+Dodatkowo przeprowadzę *test Shapiro-Wilka*, aby ostatecznie ocenić normalność rozkładu ceny samochodów. Analiza *Monte Carlo* pokazała, że *test Shapiro-Wilka* ma największą moc spośród testów badających normalność rozkładu. Szczególnie polecany jest dla małych próbek - przy większych próbkach może być zbyt czuły i wykrywać nieistotne odchylenia od normalności. W naszym przypadku jest idealny, ponieważ nasz dataset ma 93 rekordy.
+```{r}
+cars_shapiro_test <- shapiro.test(Cars93$Price)
+cars_shapiro_test
+```
+
+Wynik testu Shapiro-Wilka pokazuje, że wartość p jest znacznie mniejsza niż 0.05, co sugeruje, że rozkład ceny samochodów nie jest normalny. Wraz z histogramem i wykresem kwantyl-kwantyl jest to ostateczne potwierdzenie na niezgodność cen samochodów z rozkładem normalnym.
+
+\newpage
+\section*{2.2. Obliczanie przedziałów ufności dla średniej, standardowego odchylenia oraz wariancji}
+
+Najpierw obliczę średnią i odchylenie standardowe, a następnie obliczę przedziały ufności korzystając z metody bootstrap, z uwagi na to, że rozkład ceny samochodów nie jest normalny.
+```{r}
+cars_sd = sd(Cars93$Price)
+cars_mean = mean(Cars93$Price)
+# Ustawienie ziarna losowania
+set.seed(151885)
+# Deklaracja danych - próbka, liczba obserwacji, liczba pętli
+data_sample <- Cars93$Price
+n <- length(data_sample)
+n_bootstrap <- 1000
+# Inicjalizacja wektora do przechowywania wyników bootstrap
+bootstrap_means <- numeric(n_bootstrap)
+# Pętla bootstrap
+for (i in 1:n_bootstrap) {
+  bootstrap_sample <- sample(data_sample, size = n, replace = TRUE)
+  bootstrap_means[i] <- mean(bootstrap_sample)
+}
+# Wyznaczanie przedziałów ufności
+ci_90_bootstrap <- quantile(bootstrap_means, probs = c(0.05, 0.95), names = FALSE)
+ci_95_bootstrap <- quantile(bootstrap_means, probs = c(0.025, 0.975), names = FALSE)
+```
+
+```{r, echo=FALSE}
+# Tworzymy ramkę danych z wynikami
+ci_df <- data.frame(
+  method = c("Bootstrap", "Bootstrap"),
+  conf_level = c("90%", "95%"),
+  lower_bound = c(round(ci_90_bootstrap[1], 2), round(ci_95_bootstrap[1], 2)),
+  upper_bound = c(round(ci_90_bootstrap[2], 2), round(ci_95_bootstrap[2], 2))
+)
+colnames(ci_df) <- c("Metoda", "Poziom ufności", "Dolna granica (tys. USD)", "Górna granica (tys. USD)")
+# Wyświetlenie tabeli
+knitr::kable(ci_df, caption = "Przedziały ufności cen samochodów ze zbioru Cars93")
+```
+
+\newpage
+\section*{2.3. Podsumowanie}
+Średnia cena samochodu:
+\[
+\bar{x} = `r format(round(cars_mean * 1000, 2), scientific = FALSE)`\ \text{USD}
+\]
+
+Odchylenie standardowe ceny samochodów:
+\[
+\sigma = `r format(round(cars_sd * 1000, 2), scientific = FALSE)`\ \text{USD}
+\]
+
+Przedziały ufności:
+```{r, echo=FALSE}
+# Tworzymy ramkę danych z wynikami
+ci_df <- data.frame(
+  method = c("Bootstrap", "Bootstrap"),
+  conf_level = c("90%", "95%"),
+  lower_bound = c(round(ci_90_bootstrap[1] * 1000, 2), round(ci_95_bootstrap[1] * 1000, 2)),
+  upper_bound = c(round(ci_90_bootstrap[2] * 1000, 2), round(ci_95_bootstrap[2] * 1000, 2))
+)
+colnames(ci_df) <- c("Metoda", "Poziom ufności", "Dolna granica", "Górna granica")
+# Wyświetlenie tabeli
+knitr::kable(ci_df, caption = NULL)
+```
+
+Przedstawienie wartości na wykresie:
+
+```{r, echo = FALSE}
+hist(data_sample, 
+     main = "Histogram cen samochodów ze zbioru Cars93", 
+     xlab = "Cena (tys. USD)", 
+     ylab = "Częstość", 
+     col = rgb(173, 216, 230, maxColorValue = 255, alpha = 120),
+     border = rgb(120, 120, 120, maxColorValue = 255, alpha = 80))
+
+abline(v = ci_90_bootstrap, col = "blue", lty = 2)
+abline(v = ci_95_bootstrap, col = "red", lty = 3)
+abline(v = cars_mean, col = "darkgreen", lwd = 2)
+abline(v = cars_mean + cars_sd, col = "darkgreen", lty = 2)
+abline(v = cars_mean - cars_sd, col = "darkgreen", lty = 2)
+
+legend("topright", legend = c("90% CI (bootstrap)", "95% CI (bootstrap)", "Średnia", "Odchylenie standardowe"), col = c("blue", "red", "darkgreen", "darkgreen"), lty = c(2, 3, 1, 2), lwd = c(1, 1, 2, 1))
+```
+
+\newpage
+\section*{3. Zbiór UScrime z biblioteki \texttt{MASS}}
+Drugą próbkę, jaką wybrałem, stanowi zbiór \texttt{UScrime} z biblioteki \texttt{MASS}. Dane te dotyczą przestępczości w 47 stanach USA i zawierają wiele zmiennych społeczno-ekonomicznych, takich jak nierówność dochodów, ilość przestępstw na osobę, wydatki na policję czy też średnią liczbę lat nauki. W tej analizie skoncentruję się na badaniu wydatków na policję per capita w roku 1960 (`Po1`).
+
+\section*{3.1. Analiza normalności próbki}
+
+Najpierw sprawdzę normalność rozkładu wydatków na policję per capita w roku 1960 (\texttt{Po1}) w zbiorze \texttt{UScrime} przy użyciu histogramu, wykresu kwantyl-kwantyl oraz testu Shapiro-Wilka.
+
+Wczytanie danych:
+```{r}
+library(MASS)
+data(UScrime)
+```
+\newpage
+```{r}
+# Histogram
+hist(UScrime$Po1,
+     main = "Histogram wydatków na policję per capita",
+     xlab = "Wydatki na policję per capita (USD)",
+     ylab = "Częstość",
+     col = "lightblue",
+     border = "black",
+     breaks = 7)
+```
+Na histogramie możemy zauważyć, że rozkład wydatków na policję per capita jest asymetryczny prawostronny (prawostronnie skośny), co sugeruje, że wydatki są bardziej skoncentrowane w niższych wartościach - zwłaszcza w przedziale $[0, 100]$ USD.
+
+\newpage
+```{r}
+# QQ-plot
+qqnorm(UScrime$Po1, 
+       main = "QQ-plot wydatków na policję per capita", 
+       xlab = "Teoretyczne kwantyle", 
+       ylab = "Empiryczne kwantyle")
+qqline(UScrime$Po1, col = "red")
+```
+Wykres kwantyl-kwantyl (\(QQ\)-plot) pokazuje, że dane nie są zgodne z rozkładem normalnym - widać na nim odchylenia od linii prostej, zwłaszcza na końcach (ogony rozkładu).
+
+Podobnie jak w poprzedniej analizie na zbiorze \texttt{Cars93}, przeprowadzę test Shapiro-Wilka w celu ostatecznej oceny normalności rozkładu wydatków na policję per capita.
+```{r}
+crime_shapiro_test <- shapiro.test(UScrime$Po1)
+crime_shapiro_test
+```
+
+Wynik testu Shapiro-Wilka pokazuje, że wartość p jest znacznie mniejsza niż 0.05, co sugeruje, że rozkład nie jest normalny. Wraz z histogramem i wykresem kwantyl-kwantyl jest to ostateczne potwierdzenie na niezgodność wydatków na policję per capita w roku 1960 w 47 stanach USA z rozkładem normalnym.
+
+\newpage
+\section*{3.2. Obliczanie przedziałów ufności dla średniej, standardowego odchylenia oraz wariancji}
+
+Najpierw obliczę średnią i odchylenie standardowe, a następnie obliczę przedziały ufności korzystając z metody bootstrap, z uwagi na to, że rozkład wydatków na policję per capita nie jest normalny.
+```{r}
+uscrime_sd = sd(UScrime$Po1)
+uscrime_mean = mean(UScrime$Po1)
+# Ustawienie ziarna losowania
+set.seed(151885)
+# Deklaracja danych - próbka, liczba obserwacji, liczba pętli
+data_sample <- UScrime$Po1
+n <- length(data_sample)
+n_bootstrap <- 1000
+# Inicjalizacja wektora do przechowywania wyników bootstrap
+bootstrap_means <- numeric(n_bootstrap)
+# Pętla bootstrap
+for (i in 1:n_bootstrap) {
+  bootstrap_sample <- sample(data_sample, size = n, replace = TRUE)
+  bootstrap_means[i] <- mean(bootstrap_sample)
+}
+# Wyznaczanie przedziałów ufności
+ci_90_bootstrap <- quantile(bootstrap_means, probs = c(0.05, 0.95), names = FALSE)
+ci_95_bootstrap <- quantile(bootstrap_means, probs = c(0.025, 0.975), names = FALSE)
+```
+
+```{r, echo=FALSE}
+# Tworzymy ramkę danych z wynikami
+ci_df <- data.frame(
+  method = c("Bootstrap", "Bootstrap"),
+  conf_level = c("90%", "95%"),
+  lower_bound = c(round(ci_90_bootstrap[1], 2), round(ci_95_bootstrap[1], 2)),
+  upper_bound = c(round(ci_90_bootstrap[2], 2), round(ci_95_bootstrap[2], 2))
+)
+colnames(ci_df) <- c("Metoda", "Poziom ufności", "Dolna granica", "Górna granica")
+# Wyświetlenie tabeli
+knitr::kable(ci_df, caption = "Przedziały ufności wydatków na policję per capita w roku 1960 ze zbioru UScrime")
+```
+
+\newpage
+\section*{3.3. Podsumowanie}
+Średnie wydatki na policję per capita w roku 1960 w 47 stanach USA:
+\[
+\bar{x} = `r format(round(uscrime_mean, 2), scientific = FALSE)`\ \text{USD}
+\]
+
+Odchylenie standardowe:
+\[
+\sigma = `r format(round(uscrime_sd, 2), scientific = FALSE)`\ \text{USD}
+\]
+
+Przedziały ufności:
+```{r, echo=FALSE}
+# Tworzymy ramkę danych z wynikami
+ci_df <- data.frame(
+  method = c("Bootstrap", "Bootstrap"),
+  conf_level = c("90%", "95%"),
+  lower_bound = c(round(ci_90_bootstrap[1], 2), round(ci_95_bootstrap[1], 2)),
+  upper_bound = c(round(ci_90_bootstrap[2], 2), round(ci_95_bootstrap[2], 2))
+)
+colnames(ci_df) <- c("Metoda", "Poziom ufności", "Dolna granica", "Górna granica")
+# Wyświetlenie tabeli
+knitr::kable(ci_df, caption = NULL)
+```
+
+Przedstawienie wartości na wykresie:
+
+```{r, echo = FALSE}
+hist(data_sample, 
+     main = "Histogram wydatków na policję per capita w roku 1960", 
+     xlab = "Wydatki (USD)", 
+     ylab = "Częstość", 
+     col = rgb(173, 216, 230, maxColorValue = 255, alpha = 120),
+     border = rgb(120, 120, 120, maxColorValue = 255, alpha = 80))
+
+abline(v = ci_90_bootstrap, col = "blue", lty = 2)
+abline(v = ci_95_bootstrap, col = "red", lty = 3)
+abline(v = uscrime_mean, col = "darkgreen", lwd = 2)
+abline(v = uscrime_mean + uscrime_sd, col = "darkgreen", lty = 2)
+abline(v = uscrime_mean - uscrime_sd, col = "darkgreen", lty = 2)
+
+legend("topright", legend = c("90% CI (bootstrap)", "95% CI (bootstrap)", "Średnia", "Odchylenie standardowe"), col = c("blue", "red", "darkgreen", "darkgreen"), lty = c(2, 3, 1, 2), lwd = c(1, 1, 2, 1))
+```
+
+\newpage
+\section*{4. Zbiór \texttt{road} z biblioteki \texttt{MASS}}
+Ostatnim datasetem który przeanalizuję w tym projekcie będzie zbiór \texttt{road} z biblioteki \texttt{MASS}. Dane te przedstawiają liczbę ofiar śmiertelnych w wypadkach drogowych w 25 stanach USA, a także liczbę kierowców, gęstość zaludnienia, długość dróg wiejskich, temperatury, zużycie paliwa oraz inne czynniki mogące mieć wpływ na wypadkowość. W tej analizie skupimy się na zbadaniu liczby zgonów w wypadkach drogowych (`deaths`).
+
+\section*{4.1. Analiza normalności próbki}
+
+Najpierw sprawdzę normalność rozkładu liczby zgonów w wypadkach drogowych (\texttt{deaths}) w zbiorze \texttt{road} przy użyciu histogramu, wykresu kwantyl-kwantyl oraz testu Shapiro-Wilka.
+
+Wczytanie danych:
+```{r}
+library(MASS)
+data(road)
+```
+\newpage
+```{r}
+# Histogram
+hist(road$deaths,
+     main = "Histogram zgonów w wypadkach drogowych",
+     xlab = "Liczba zgonów w wypadkach drogowych",
+     ylab = "Częstość",
+     col = "lightblue",
+     border = "black",
+     breaks = 7)
+```
+Na histogramie możemy zauważyć, że rozkład liczby zgonów w wypadkach drogowych jest asymetryczny prawostronny (prawostronnie skośny), co sugeruje, że liczby zgonów w wypadkach w danym stanie są bardziej skoncentrowane w niższych wartościach - zwłaszcza w przedziale $[0, 1500]$ osób. Warto zaznaczyć, że większość stanów ma relatywnie niską liczbę zgonów ($[0, 2500]$), ale występują wartości odstające w przedziale $[4500, 5000]$.
+
+\newpage
+```{r}
+# QQ-plot
+qqnorm(road$deaths, 
+       main = "QQ-plot zgonów w wypadkach drogowych", 
+       xlab = "Teoretyczne kwantyle", 
+       ylab = "Empiryczne kwantyle")
+qqline(road$deaths, col = "red")
+```
+Wykres kwantyl-kwantyl (\(QQ\)-plot) pokazuje, że dane nie są zgodne z rozkładem normalnym - widać na nim odchylenia od linii prostej, zwłaszcza na prawym ogonie rozkładu. Punkty, które tam widzimy są znacznie powyżej linii, co oznacza obecność wartości odstających i skośność prawostronną.
+
+Podobnie jak w poprzednich analizach, przeprowadzę teraz test Shapiro-Wilka. Na bazie naszych poprzednich obserwacji możemy spodziewać się, że rozkład liczby zgonów w wypadkach drogowych nie jest normalny.
+```{r}
+road_shapiro_test <- shapiro.test(road$deaths)
+road_shapiro_test
+```
+
+Wynik testu Shapiro-Wilka pokazuje, że wartość p jest znacznie mniejsza niż 0.05, co sugeruje, że rozkład nie jest normalny. Wraz z histogramem i wykresem kwantyl-kwantyl jest to ostateczne potwierdzenie na niezgodność naszych danych z rozkładem normalnym.
+
+\newpage
+\section*{4.2. Obliczanie przedziałów ufności dla średniej, standardowego odchylenia oraz wariancji}
+
+Najpierw obliczę średnią i odchylenie standardowe, a następnie obliczę przedziały ufności korzystając z metody bootstrap, z uwagi na to, że rozkład liczby zgonów w wypadkach drogowych nie jest normalny.
+```{r}
+roads_sd = sd(road$deaths)
+roads_mean = mean(road$deaths)
+# Ustawienie ziarna losowania
+set.seed(151885)
+# Deklaracja danych - próbka, liczba obserwacji, liczba pętli
+data_sample <- road$deaths
+n <- length(data_sample)
+n_bootstrap <- 1000
+# Inicjalizacja wektora do przechowywania wyników bootstrap
+bootstrap_means <- numeric(n_bootstrap)
+# Pętla bootstrap
+for (i in 1:n_bootstrap) {
+  bootstrap_sample <- sample(data_sample, size = n, replace = TRUE)
+  bootstrap_means[i] <- mean(bootstrap_sample)
+}
+# Wyznaczanie przedziałów ufności
+ci_90_bootstrap <- quantile(bootstrap_means, probs = c(0.05, 0.95), names = FALSE)
+ci_95_bootstrap <- quantile(bootstrap_means, probs = c(0.025, 0.975), names = FALSE)
+```
+
+```{r, echo=FALSE}
+# Tworzymy ramkę danych z wynikami
+ci_df <- data.frame(
+  method = c("Bootstrap", "Bootstrap"),
+  conf_level = c("90%", "95%"),
+  lower_bound = c(round(ci_90_bootstrap[1], 2), round(ci_95_bootstrap[1], 2)),
+  upper_bound = c(round(ci_90_bootstrap[2], 2), round(ci_95_bootstrap[2], 2))
+)
+colnames(ci_df) <- c("Metoda", "Poziom ufności", "Dolna granica", "Górna granica")
+# Wyświetlenie tabeli
+knitr::kable(ci_df, caption = "Przedziały ufności liczby zgonów w wypadkach drogowych ze zbioru road")
+```
+
+\newpage
+\section*{4.3. Podsumowanie}
+Średnia liczba zgonów w wypadkach drogowych w połowie stanów USA:
+\[
+\bar{x} = `r format(round(roads_mean, 2), scientific = FALSE)`\
+\]
+
+Odchylenie standardowe:
+\[
+\sigma = `r format(round(roads_sd, 2), scientific = FALSE)`\
+\]
+
+Przedziały ufności:
+```{r, echo=FALSE}
+# Tworzymy ramkę danych z wynikami
+ci_df <- data.frame(
+  method = c("Bootstrap", "Bootstrap"),
+  conf_level = c("90%", "95%"),
+  lower_bound = c(round(ci_90_bootstrap[1], 2), round(ci_95_bootstrap[1], 2)),
+  upper_bound = c(round(ci_90_bootstrap[2], 2), round(ci_95_bootstrap[2], 2))
+)
+colnames(ci_df) <- c("Metoda", "Poziom ufności", "Dolna granica", "Górna granica")
+# Wyświetlenie tabeli
+knitr::kable(ci_df, caption = NULL)
+```
+
+Przedstawienie wartości na wykresie:
+
+```{r, echo = FALSE}
+hist(data_sample, 
+     main = "Histogram zgonów w wypadkach drogowych", 
+     xlab = "Liczba zgonów", 
+     ylab = "Częstość", 
+     col = rgb(173, 216, 230, maxColorValue = 255, alpha = 120),
+     border = rgb(120, 120, 120, maxColorValue = 255, alpha = 80),
+     breaks = 7)
+
+abline(v = ci_90_bootstrap, col = "blue", lty = 2)
+abline(v = ci_95_bootstrap, col = "red", lty = 3)
+abline(v = roads_mean, col = "darkgreen", lwd = 2)
+abline(v = roads_mean + roads_sd, col = "darkgreen", lty = 2)
+abline(v = roads_mean - roads_sd, col = "darkgreen", lty = 2)
+
+legend("topright", legend = c("90% CI (bootstrap)", "95% CI (bootstrap)", "Średnia", "Odchylenie standardowe"), col = c("blue", "red", "darkgreen", "darkgreen"), lty = c(2, 3, 1, 2), lwd = c(1, 1, 2, 1))
 ```
