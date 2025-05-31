@@ -1,0 +1,652 @@
+---
+title: "Laboratorium 5"
+subtitle: "Wstęp do Analizy Danych | Politechnika Krakowska"
+author: "Jakub Kapała"
+output: 
+  pdf_document:
+    latex_engine: xelatex
+header-includes: |
+  \usepackage{fancyhdr}
+  \usepackage{float}
+  \usepackage{enumitem}
+  \pagestyle{fancy}
+  \fancyhead[L]{\textbf{WdAD - Sprawozdanie - Laboratorium 5}}
+  \fancyhead[R]{\textbf{Jakub Kapała}}
+---
+
+```{r setup, include=FALSE}
+library(Cairo)
+knitr::opts_chunk$set(dev = "CairoPDF", echo = TRUE)
+Sys.setlocale("LC_CTYPE", "pl_PL.UTF-8")
+```
+\begin{center}
+{\small Numer albumu: 151885} \\[0.1cm]
+{\small Data: `r format(Sys.time(), '%d.%m.%Y')`}
+\end{center}
+\newpage
+
+## Zadanie 1 - Testowanie hipotez
+#### Treść
+
+\begin{enumerate}[label=1.\arabic*]
+
+  \item Z biblioteki \texttt{MASS} otworzyć zestaw danych \texttt{Cars93}. Przedstawić na wykresie pudełkowym średnie ceny samochodów w zależności od producenta. Następnie przedstawić wykresy pudełkowe wyłącznie dla Chevroletów oraz Fordów.\\
+  Przydatne funkcje: \texttt{subset}, \texttt{droplevels}.
+
+  \item Utworzyć ramki danych zawierające wyłącznie Chevrolety (\texttt{Chevrolets93}), Fordy (\texttt{Fords93}) oraz jedynie Chevrolety i Fordy (\texttt{ChevNFord93}).
+
+  \item Zbadać hipotezę zerową, że średnia cena Chevroleta na rynku wynosiła $\mu = 15$ (tj. 15 000 \$). Obliczyć t-statystykę dla tej hipotezy:
+  \[
+  t = \frac{\bar{x} - \mu}{s / \sqrt{n}}
+  \]
+  gdzie $\bar{x}$ – średnia z próbki, $\mu$ – średnia zakładana w ramach hipotezy zerowej, $s$ – odchylenie standardowe z próbki, $n$ – rozmiar próbki.
+
+  \item P-wartość (p-value) to prawdopodobieństwo uzyskania wyników testu co najmniej tak samo skrajnych jak te zaobserwowane w naszej próbce, obliczone przy założeniu, że hipoteza zerowa jest prawdziwa.\\
+  Należy znaleźć p-wartość dla hipotezy zerowej, że średnia cena Chevroleta na rynku wynosi 15 000 \$.
+
+  \item Znaleźć przedział ufności dla cen Chevroleta odpowiadający poziomowi ufności 95\%.
+
+  \item Znaleźć wielkości wyznaczone w zadaniach 1.3–1.5 za pomocą funkcji \texttt{t.test()}.
+
+  \item Domyślną wartością parametru \texttt{alternative} jest hipoteza alternatywna, że prawdziwa wartość średniej różni się od zakładanej w hipotezie zerowej. Przeprowadzić t-test z hipotezą alternatywną, że:
+  \begin{itemize}
+    \item średnia jest poniżej 15 000 \$,
+    \item średnia przekracza 15 000 \$.
+  \end{itemize}
+
+  \item Sprawdzić hipotezę zerową, że średnia cena Chevroleta jest równa średniej cenie Forda, z hipotezami alternatywnymi, że cena ta jest:
+  \begin{itemize}
+    \item różna,
+    \item mniejsza,
+    \item większa.
+  \end{itemize}
+
+  \item Za pomocą funkcji \texttt{cor.test()} sprawdzić hipotezę, że rozmiar silnika (\texttt{EngineSize}) oraz moc silnika (\texttt{Horsepower}) są skorelowane.
+
+\end{enumerate}
+
+\newpage
+
+#### Rozwiązanie
+
+\begin{enumerate}[label=]
+  \item \(1.1.\) Utworzenie wykresu średnich cen samochodów w zależności od producenta.
+\end{enumerate}
+
+Wczytanie danych:
+```{r}
+library(MASS)
+library(ggplot2)
+data(Cars93, package = "MASS")
+```
+
+Wyświetlenie wykresu pudełkowego średnich cen samochodów w zależności od producenta:
+```{r}
+ggplot(Cars93, aes(x = Manufacturer, y = Price)) +
+  geom_boxplot(fill = "lightblue") +
+  labs(
+    title = "Ceny samochodów wg producenta",
+    x = "Producent", y = "Cena (tys. USD)"
+  ) +
+  theme(
+    plot.title = element_text(hjust = 0.5, margin = margin(b = 10)), 
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    axis.title.y = element_text(margin = margin(r = 10)),
+    axis.title.x = element_text(margin = margin(t = 10))
+  )
+```
+\newpage
+
+Wyświetlenie wykresu pudełkowego tylko dla Chevroletów i Fordów:
+```{r}
+chev_ford <- droplevels(
+  subset(Cars93, Manufacturer %in% c("Chevrolet", "Ford"))
+)
+
+ggplot(chev_ford, aes(x = Manufacturer, y = Price)) +
+  geom_boxplot(fill = "lightgreen") +
+  labs(
+    title = "Ceny Chevroletów i Fordów",
+    x = "Producent",
+    y = "Cena (tys. USD)"
+  ) +
+  theme(
+    plot.title = element_text(hjust = 0.5, margin = margin(b = 10)), 
+    axis.title.y = element_text(margin = margin(r = 10)),
+    axis.title.x = element_text(margin = margin(t = 10))
+  )
+```
+
+\newpage
+
+\begin{enumerate}[label=]
+  \item \(1.2.\) Utworzenie ramek danych
+\end{enumerate}
+
+Ramka danych tylko dla Chevroletów:
+```{r}
+Chevrolets93 <- droplevels(subset(Cars93, Manufacturer == "Chevrolet"))
+```
+
+Ramka danych tylko dla Fordów:
+```{r}
+Fords93 <- droplevels(subset(Cars93, Manufacturer == "Ford"))
+```
+
+Ramka danych dla Chevroletów i Fordów:
+```{r}
+ChevNFord93 <- droplevels(
+  subset(Cars93, Manufacturer %in% c("Chevrolet", "Ford"))
+)
+```
+
+Wyświetlenie pierwszego wierszu z każdej ramki danych:
+```{r, results = 'asis'}
+head(Chevrolets93, 1)
+head(Fords93, 1)
+head(ChevNFord93, 1)
+```
+
+\newpage
+
+\begin{enumerate}[label=]
+  \item \(1.3.\) Badanie hipotezy zerowej
+\end{enumerate}
+
+Deklaracja zmiennych - średnia z próbki, średnia z założenia, odchylenie standardowe i rozmiar:
+```{r}
+mean_price_chevy_0 <- 15
+mean_price_chevy_sample <- mean(Chevrolets93$Price)
+sd_price_chevy <- sd(Chevrolets93$Price)
+n_chevy <- nrow(Chevrolets93)
+```
+```{r, echo = FALSE}
+chevy_df <- data.frame(
+  mean_sample = mean_price_chevy_sample,
+  mean_0 = mean_price_chevy_0,
+  sd = sd_price_chevy,
+  size = n_chevy
+)
+colnames(chevy_df) <- c("Średnia z próbki", "Średnia z założenia", "Odchylenie standardowe", "Rozmiar próbki")
+knitr::kable(chevy_df, caption = "Wartości użyte do obliczeń t-statystyki")
+```
+
+Obliczenie t-statystyki z podanego wzoru:
+```{r}
+t_stat <- (mean_price_chevy_sample - mean_price_chevy_0) /
+  (sd_price_chevy / sqrt(n_chevy))
+```
+\[
+\text{t} = `r format(t_stat, scientific = FALSE)`\
+\]
+
+Wynik ten oznacza, że średnia cena Chevroleta w próbie jest oddalona o około `r round(t_stat, 2)` odchylenia standardowego błędu średniej od średniej zakładanej w hipotezie zerowej.
+Możemy także dzięki niej obliczyć, jaka dokładnie jest średnia:
+```{r}
+mean_price_chevy_calc <- t_stat * (sd_price_chevy / sqrt(n_chevy)) + mean_price_chevy_0
+mean_price_chevy_calc
+```
+Wartość ta jest spójna z wartością średniej z próby, co potwierdza poprawność obliczeń.
+
+\newpage
+\begin{enumerate}[label=]
+  \item \(1.4.\) Znalezienie p-value
+\end{enumerate}
+
+Najpierw obliczamy stopnie swobody:
+```{r}
+df_chevy <- n_chevy - 1
+```
+
+Następnie korzystając z t-statystyki z poprzedniego punktu, obliczamy p-value dla hipotezy zerowej, że średnia cena Chevroleta wynosi 15 000 \$:
+```{r}
+p_value_chevy <- 2 * pt(-abs(t_stat), df = df_chevy)
+```
+\[
+\text{P} = `r format(round(p_value_chevy, 4), scientific = FALSE)`\
+\]
+Wartość ta jest znacznie większa niż 0.05, co sugeruje, że nie możemy odrzucić hipotezy zerowej. Oznacza to, że średnia cena Chevroleta w próbie nie różni się istotnie od 15 000 \$.
+
+\newpage
+\begin{enumerate}[label=]
+  \item \(1.5.\) Obliczenie przedziału ufności 95\%
+\end{enumerate}
+Deklaracja poziomu ufności:
+```{r}
+alpha <- 0.05
+```
+Obliczanie wartości krytycznej t-Studenta oraz błędu standardowego średniej:
+```{r}
+t_crit <- qt(1 - alpha/2, df = df_chevy)
+se_chevy <- sd_price_chevy / sqrt(n_chevy)
+```
+Obliczenie przedziału ufności 95\% dla średniej ceny Chevroleta:
+```{r}
+ci_lower <- mean_price_chevy_sample - t_crit * se_chevy
+ci_upper <- mean_price_chevy_sample + t_crit * se_chevy
+
+chevy_ci <- c(ci_lower, ci_upper)
+```
+
+\[
+\text{Przedział ufności 95\%:} \quad \left( `r round(ci_lower, 2)`,\ `r round(ci_upper, 2)` \right)
+\]
+
+\newpage
+\begin{enumerate}[label=]
+  \item \(1.6.\) Użycie funkcji \texttt{t.test()} w celu znalezienia wartości zadań 1.3–1.5
+\end{enumerate}
+
+```{r}
+nrow(Chevrolets93)
+t_test_chevy <- t.test(Chevrolets93$Price, mu = mean_price_chevy_0)
+t_test_chevy
+```
+\[
+\text{t} = `r format(t_test_chevy$statistic, scientific = FALSE)`\
+\]
+\[
+\text{P} = `r format(t_test_chevy$p.value, scientific = FALSE)`\
+\]
+\[
+\text{Przedział ufności 95\%:} \quad \left( `r round(t_test_chevy$conf.int[1], 2)`,\ `r round(t_test_chevy$conf.int[2], 2)` \right)
+\]
+
+Wartości te są zgodne z obliczeniami wykonanymi w poprzednich punktach.
+
+\newpage
+\begin{enumerate}[label=]
+  \item \(1.7.\) Przeprowadzenie t-testu z hipotezą alternatywną, że średnia cena Chevroleta jest poniżej 15 000 \$ oraz przekracza 15 000 \$.
+\end{enumerate}
+```{r}
+t_test_chevy_below <- t.test(Chevrolets93$Price, mu = mean_price_chevy_0, alternative = "less")
+t_test_chevy_above <- t.test(Chevrolets93$Price, mu = mean_price_chevy_0, alternative = "greater")
+t_test_chevy_below
+t_test_chevy_above
+```
+
+```{r, echo = FALSE}
+t_test_results <- data.frame(
+  hypothesis = c("Średnia < 15 000", "Średnia > 15 000"),
+  ci = c(
+    paste0("(", round(t_test_chevy_below$conf.int[1], 2), ", ", round(t_test_chevy_below$conf.int[2], 2), ")"),
+    paste0("(", round(t_test_chevy_above$conf.int[1], 2), ", ", round(t_test_chevy_above$conf.int[2], 2), ")")
+  ),
+  t_stat = c(t_test_chevy_below$statistic, t_test_chevy_above$statistic),
+  p_value = c(t_test_chevy_below$p.value, t_test_chevy_above$p.value)
+)
+colnames(t_test_results) <- c("Hipoteza alternatywna", "Przedział ufności 95%", "t-statystyka", "p-value")
+knitr::kable(t_test_results, caption = "Wyniki t-testów dla hipotez alternatywnych")
+```
+
+Na bazie wyników t-testów możemy stwierdzić, że
+\begin{enumerate}
+  \item dla hipotezy, że średnia cena Chevroleta jest poniżej 15 000 \$, p-value jest znacznie większe niż 0.05, co sugeruje, że nie możemy odrzucić hipotezy zerowej. Oznacza to, że nie ma statystycznych dowodów na to, że średnia cena Chevroleta jest niższa niż 15 000 \$.
+  \item dla hipotezy, że średnia cena Chevroleta przekracza 15 000 \$, p-value jest większe niż 0.05, co również sugeruje, że nie możemy odrzucić hipotezy zerowej. Oznacza to, że nie ma statystycznych dowodów na to, że średnia cena Chevroleta jest wyższa niż 15 000 \$.
+\end{enumerate}
+Podsumowując, wyniki t-testów potwierdzają, że średnia cena Chevroleta nie różni się istotnie od 15 000 \$. Nie oznacza to jednak, że średnia cena Chevroleta jest równa 15 000 \$, a jedynie że nie możemy odrzucić hipotez zerowych.
+
+\newpage
+\begin{enumerate}[label=]
+  \item \(1.8.\) Sprawdzenie hipotezy zerowej, że średnia cena Chevroleta jest równa średniej cenie Forda.
+\end{enumerate}
+
+Najpierw wykonam t-test z hipotezą alternatywną, że średnia cena Chevroleta jest różna od średniej ceny Forda:
+```{r}
+t_test_chevy_vs_ford_two_sided <- t.test(
+  Chevrolets93$Price, Fords93$Price,
+  alternative = "two.sided"
+)
+t_test_chevy_vs_ford_two_sided
+```
+
+Następnie sprawdzę hipotezę alternatywną, że średnia cena Chevroleta jest mniejsza od średniej ceny Forda:
+```{r}
+t_test_chevy_vs_ford_less <- t.test(
+  Chevrolets93$Price, Fords93$Price,
+  alternative = "less"
+)
+t_test_chevy_vs_ford_less
+```
+\newpage
+Ostatnią hipotezą alternatywną będzie, że średnia cena Chevroleta jest większa od średniej ceny Forda:
+```{r}
+t_test_chevy_vs_ford_greater <- t.test(
+  Chevrolets93$Price, Fords93$Price,
+  alternative = "greater"
+)
+t_test_chevy_vs_ford_greater
+```
+```{r, echo = FALSE}
+t_test_chevy_vs_ford_results <- data.frame(
+  hypothesis = c("Średnie różne", "Chevrolet < Ford", "Chevrolet > Ford"),
+  ci = c(
+    paste0("(", round(t_test_chevy_vs_ford_two_sided$conf.int[1], 2), ", ", round(t_test_chevy_vs_ford_two_sided$conf.int[2], 2), ")"),
+    paste0("(", round(t_test_chevy_vs_ford_less$conf.int[1], 2), ", ", round(t_test_chevy_vs_ford_less$conf.int[2], 2), ")"),
+    paste0("(", round(t_test_chevy_vs_ford_greater$conf.int[1], 2), ", ", round(t_test_chevy_vs_ford_greater$conf.int[2], 2), ")")
+  ),
+  t_stat = c(
+    round(t_test_chevy_vs_ford_two_sided$statistic, 4),
+    round(t_test_chevy_vs_ford_less$statistic, 4),
+    round(t_test_chevy_vs_ford_greater$statistic, 4)
+  ),
+  p_value = c(
+    round(t_test_chevy_vs_ford_two_sided$p.value, 4),
+    round(t_test_chevy_vs_ford_less$p.value, 4),
+    round(t_test_chevy_vs_ford_greater$p.value, 4)
+  )
+)
+colnames(t_test_chevy_vs_ford_results) <- c("Hipoteza alternatywna", "Przedział ufności 95%", "t-statystyka", "p-value")
+knitr::kable(t_test_chevy_vs_ford_results, caption = "Wyniki t-testów: porównanie średnich cen Chevroletów i Fordów")
+```
+
+Na podstawie wyników t-testów możemy stwierdzić, że:
+\begin{enumerate}
+  \item dla hipotezy, że średnie ceny Chevroletów i Fordów są różne, p-value jest większe od 0.05, co sugeruje, że nie możemy odrzucić hipotezy zerowej. Oznacza to, że nie ma statystycznych dowodów na to, że średnie ceny Chevroletów i Fordów różnią się.
+  \item dla hipotezy, że średnia cena Chevroleta jest mniejsza od średniej ceny Forda, p-value jest znacznie większe od 0.05, co sugeruje, że nie możemy odrzucić hipotezy zerowej. Oznacza to, że nie ma statystycznych dowodów na to, że średnia cena Chevroleta jest niższa niż średnia cena Forda.
+  \item dla hipotezy, że średnia cena Chevroleta jest większa od średniej ceny Forda, p-value jest większe od 0.05, co sugeruje, że nie możemy odrzucić hipotezy zerowej. Oznacza to, że nie ma statystycznych dowodów na to, że średnia cena Chevroleta jest wyższa niż średnia cena Forda.
+\end{enumerate}
+Podsumowując, wyniki t-testów potwierdzają, że średnie ceny Chevroletów i Fordów nie różnią się istotnie. Nie oznacza to jednak, że średnie ceny są równe, a jedynie że nie możemy odrzucić hipotez zerowych.
+
+\newpage
+\begin{enumerate}[label=]
+  \item \(1.9.\) Sprawdzenie hipotezy, że rozmiar silnika (\texttt{EngineSize}) oraz moc silnika (\texttt{Horsepower}) są skorelowane.
+\end{enumerate}
+```{r}
+cor_test_engine_horsepower <- cor.test(
+  Cars93$EngineSize, Cars93$Horsepower,
+  method = "pearson"
+)
+cor_test_engine_horsepower
+```
+```{r, echo = FALSE}
+cor_test_engine_horsepower_df <- data.frame(
+  correlation = round(cor_test_engine_horsepower$estimate, 4),
+  ci = paste0(
+    "(", 
+    round(cor_test_engine_horsepower$conf.int[1], 4), 
+    ", ", 
+    round(cor_test_engine_horsepower$conf.int[2], 4), 
+    ")"
+  ),
+  p_value = round(cor_test_engine_horsepower$p.value, 4)
+)
+colnames(cor_test_engine_horsepower_df) <- c("Współczynnik korelacji", "Przedział ufności 95%", "p-value")
+knitr::kable(cor_test_engine_horsepower_df, caption = "Wyniki testu korelacji: rozmiar silnika vs moc silnika")
+```
+Na podstawie testu korelacji Pearsona możemy stwierdzić, że:
+\begin{enumerate}
+  \item Współczynnik korelacji pomiędzy rozmiarem silnika a mocą silnika wynosi $r = 0.73$, co wskazuje na silną dodatnią zależność liniową.
+  \item Przedział ufności 95\% dla współczynnika korelacji to $(0.62,\ 0.81)$.
+  \item p-value jest znacznie mniejsze niż 0.05, co pozwala odrzucić hipotezę zerową o braku korelacji.
+\end{enumerate}
+Podsumowując, istnieje istotna statystycznie, silna dodatnia korelacja pomiędzy rozmiarem silnika a mocą silnika w zbiorze Cars93.
+
+\newpage
+
+## Zadanie 2
+#### Treść
+
+Utworzyć funkcje \texttt{slope(x, y)} oraz \texttt{intercept(x, y)}, które otrzymawszy wektory współrzędnych $x$ i $y$ danych zwracają współczynnik kierunkowy $a$ oraz wyraz wolny $b$ dopasowanej do tych danych funkcji liniowej zgodnie ze wzorami metody najmniejszych kwadratów:
+\[
+a = \frac{nS_{xy} - S_x S_y}{nS_{xx} - S_x^2} \qquad
+b = \frac{S_y S_{xx} - S_x S_{xy}}{nS_{xx} - S_x^2},
+\]
+
+gdzie:
+\[
+S_x = \sum_i x_i, \quad
+S_y = \sum_i y_i, \quad
+S_{xx} = \sum_i x_i^2, \quad
+S_{xy} = \sum_i x_i y_i.
+\]
+
+#### Rozwiązanie
+
+Funkcja slope oblicza współczynnik kierunkowy $a$:
+```{r}
+slope <- function(x, y) {
+  n <- length(x)
+  Sx <- sum(x)
+  Sy <- sum(y)
+  Sxx <- sum(x^2)
+  Sxy <- sum(x * y)
+  a <- (n * Sxy - Sx * Sy) / (n * Sxx - Sx^2)
+  return(a)
+}
+```
+
+Funkcja intercept oblicza wyraz wolny $b$:
+```{r}
+intercept <- function(x, y) {
+  n <- length(x)
+  Sx <- sum(x)
+  Sy <- sum(y)
+  Sxx <- sum(x^2)
+  Sxy <- sum(x * y)
+  b <- (Sy * Sxx - Sx * Sxy) / (n * Sxx - Sx^2)
+  return(b)
+}
+```
+
+Test działania funkcji:
+```{r}
+x <- c(1, 2, 3, 4, 5)
+y <- c(2, 3, 5, 7, 11)
+a <- slope(x, y)
+b <- intercept(x, y)
+cat("Równanie prostej: y =", a, "* x +", b, "\n")
+```
+Porównanie do wbudowanych funkcji:
+```{r}
+lm_model <- lm(y ~ x)
+cat("Równanie prostej z lm(): y =", coef(lm_model)[2], "* x +", coef(lm_model)[1], "\n")
+```
+
+\newpage
+
+## Zadanie 3
+#### Treść
+
+\begin{enumerate}[label=3.\arabic*]
+
+\item Z biblioteki \texttt{MASS} otworzyć zestaw danych \texttt{crabs} dotyczący krabów z gatunku \textit{Leptograpsus variegatus}\footnote{\url{https://en.wikipedia.org/wiki/Leptograpsus}}. Przefiltrować dane tak, by zawierały wyłącznie samców z gatunku niebieskiego (B). Przeprowadzić regresję liniową dla zależności długości pancerza (CL) od szerokości pancerza (CW) tych osobników. Przedstawić wykres tej zależności wraz z dopasowaną prostą.\\
+Potrzebne funkcje: \texttt{lm()}, \texttt{summary()}, \texttt{abline()}.
+
+\item Znaleźć współczynniki prostej dopasowanej za pomocą metody najmniejszych kwadratów, korzystając z funkcji z zadania 2.
+
+\item Przedstawić na wykresie błędy (residuals) między długością pancerza przewidzianą na podstawie dopasowanej prostej a rzeczywistą.
+
+\end{enumerate}
+
+#### Rozwiązanie
+
+\begin{enumerate}[label=]
+  \item \(3.1.\) Wczytanie danych i przefiltrowanie ich
+\end{enumerate}
+
+Wczytanie danych:
+```{r}
+library(MASS)
+data(crabs, package = "MASS")
+```
+
+Przefiltrowanie danych, aby zawierały jedynie samce z gatunku niebieskiego (\texttt{B}):
+```{r}
+crabs_male_blue <- subset(crabs, sex == "M" & sp == "B")
+```
+
+Regresja liniowa dla zależności długości pancerza (CL) od szerokości pancerza (CW):
+```{r}
+lm_crabs <- lm(CL ~ CW, data = crabs_male_blue)
+```
+
+Podsumowanie modelu regresji:
+```{r}
+summary(lm_crabs)
+```
+\newpage
+Teraz wyświetlę wykres zależności długości pancerza od szerokości pancerza wraz z dopasowaną prostą:
+```{r}
+plot(crabs_male_blue$CW, crabs_male_blue$CL,
+     main = "Długość pancerza (CL) vs szerokość pancerza (CW)",
+     xlab = "Szerokość pancerza (CW)",
+     ylab = "Długość pancerza (CL)",
+     pch = 19, col = "blue")
+abline(lm_crabs, col = "red", lwd = 2)
+legend("topleft", legend = "Dopasowana prosta", col = "red", lwd = 2, bty = "n")
+```
+
+\newpage
+\begin{enumerate}[label=]
+  \item \(3.2.\) Współczynniki prostej dopasowanej za pomocą metody najmniejszych kwadratów
+\end{enumerate}
+Współczynnik kierunkowy (nachylenie) i wyraz wolny prostej dopasowanej do danych:
+```{r}
+a_crabs <- slope(crabs_male_blue$CW, crabs_male_blue$CL)
+b_crabs <- intercept(crabs_male_blue$CW, crabs_male_blue$CL)
+```
+
+\[
+\text{a} = `r round(a_crabs, 4)`\
+\]
+\[
+\text{b} = `r round(b_crabs, 4)`\
+\]
+
+```{r, echo = FALSE}
+sign_b <- if (b_crabs < 0) "" else "+"
+eqn <- paste0("y = ", round(a_crabs, 4), " \\cdot x ", sign_b, round(b_crabs, 4))
+```
+\[
+\text{Równanie prostej: } `r eqn`\
+\]
+
+Wartości te są zgodne z wynikami uzyskanymi w poprzednim punkcie z funkcji \texttt{lm()}.
+\newpage
+\begin{enumerate}[label=]
+  \item \(3.3.\) Wykres błędów (residuals)
+\end{enumerate}
+
+Obliczenie błędów (residuals) między długością pancerza przewidzianą na podstawie dopasowanej prostej a rzeczywistą:
+```{r}
+predicted_cl <- a_crabs * crabs_male_blue$CW + b_crabs
+residuals_crabs <- crabs_male_blue$CL - predicted_cl
+```
+
+Wyświetlanie wykresu:
+```{r}
+plot(crabs_male_blue$CW, residuals_crabs,
+     main = "Reszty regresji: CL vs CW (samce niebieskie)",
+     xlab = "Szerokość pancerza (CW)",
+     ylab = "Reszty (CL - CL_pred)",
+     pch = 19, col = "darkgreen")
+abline(h = 0, col = "blue", lwd = 2, lty = 2)
+```
+
+\newpage
+
+## Zadanie 4
+#### Treść
+
+\begin{enumerate}[label=4.\arabic*]
+
+\item Z biblioteki \texttt{MASS} otworzyć zestaw danych \texttt{steam} dotyczący zależności ciśnienia pary nasyconej od temperatury. Przeprowadzić regresję liniową dla zależności $p(T)$.
+
+\item Przedstawić na wykresie zależność ciśnienia pary nasyconej od temperatury wraz z dopasowaną prostą.
+
+\item Przedstawić wykres błędów dopasowania prostej (residuals).
+
+\item Powyższe dane są słabo opisywane przez funkcję liniową. Spróbować dopasować funkcję kwadratową do danych. Przedstawić wykres punktów pomiarowych wraz z dopasowaną krzywą oraz wykres błędów.
+
+\end{enumerate}
+
+#### Rozwiązanie
+\begin{enumerate}[label=]
+  \item \(4.1.\) Wczytanie danych i przeprowadzenie regresji liniowej
+\end{enumerate}
+Wczytanie danych:
+```{r}
+library(MASS)
+data(steam, package = "MASS")
+```
+Przeprowadzenie regresji liniowej dla zależności ciśnienia pary nasyconej od temperatury:
+```{r}
+lm_steam <- lm(Press ~ Temp, data = steam)
+summary(lm_steam)
+```
+\newpage
+\begin{enumerate}[label=]
+  \item \(4.2.\) Wykres zależności ciśnienia pary nasyconej od temperatury wraz z dopasowaną prostą
+\end{enumerate}
+Wyświetlenie wykresu zależności ciśnienia pary nasyconej od temperatury wraz z dopasowaną prostą:
+```{r}
+plot(steam$Temp, steam$Press,
+     main = "Ciśnienie pary nasyconej od temperatury",
+     xlab = "Temperatura (°C)",
+     ylab = "Ciśnienie (kPa)",
+     pch = 19, col = "blue")
+abline(lm_steam, col = "red", lwd = 2)
+legend("topleft", legend = "Dopasowana prosta", col = "red", lwd = 2, bty = "n")
+```
+
+Model regresji liniowej jest widoczny na wykresie jako czerwona linia. Widać, że model ten nie jest idealnym dopasowaniem do danych, ponieważ punkty pomiarowe nie leżą blisko linii regresji. Lepsza byłaby funkcja nieliniowa, np. kwadratowa.
+
+\newpage
+\begin{enumerate}[label=]
+  \item \(4.3.\) Wykres błędów dopasowania prostej (residuals)
+\end{enumerate}
+Obliczenie błędów (residuals) między ciśnieniem przewidzianym na podstawie dopasowanej prostej a rzeczywistym:
+```{r}
+predicted_press <- predict(lm_steam)
+residuals_steam <- steam$Press - predicted_press
+```
+Wyświetlenie wykresu błędów:
+```{r}
+plot(steam$Temp, residuals_steam,
+     main = "Reszty regresji: Ciśnienie vs Temperatura",
+     xlab = "Temperatura (°C)",
+     ylab = "Reszty (Press - Press_pred)",
+     pch = 19, col = "darkgreen")
+abline(h = 0, col = "blue", lwd = 2, lty = 2)
+legend("topleft", legend = "Reszty", col = "darkgreen", pch = 19, bty = "n")
+```
+
+Jak widać na wykresie, reszty znacznie różnią się od zera, co sugeruje, że model liniowy nie jest najlepszym dopasowaniem do danych.
+\newpage
+\begin{enumerate}[label=]
+  \item \(4.4.\) Dopasowanie funkcji kwadratowej do danych
+\end{enumerate}
+Przeprowadzenie regresji kwadratowej:
+```{r}
+lm_steam_quad <- lm(Press ~ poly(Temp, 2, raw = TRUE), data = steam)
+summary(lm_steam_quad)
+```
+\newpage
+Wyświetlenie wykresu punktów pomiarowych wraz z dopasowaną krzywą:
+```{r}
+plot(steam$Temp, steam$Press,
+     main = "Ciśnienie pary nasyconej od temperatury (kwadratowa)",
+     xlab = "Temperatura (°C)",
+     ylab = "Ciśnienie (kPa)",
+     pch = 19, col = "blue")
+curve(predict(lm_steam_quad, newdata = data.frame(Temp = x)), 
+      add = TRUE, col = "red", lwd = 2)
+legend("topleft", legend = "Dopasowana krzywa", col = "red", lwd = 2, bty = "n")
+```
+
+Tym razem wygląda to znacznie lepiej. Krzywa dopasowana do danych jest bardziej złożona i lepiej odwzorowuje zależność między temperaturą a ciśnieniem pary nasyconej.
+\newpage
+Zobaczmy teraz wykres błędów dopasowania tej krzywej:
+```{r}
+predicted_press_quad <- predict(lm_steam_quad)
+residuals_steam_quad <- steam$Press - predicted_press_quad
+plot(steam$Temp, residuals_steam_quad,
+     main = "Reszty regresji kwadratowej: Ciśnienie vs Temperatura",
+     xlab = "Temperatura (°C)",
+     ylab = "Reszty (Press - Press_pred)",
+     pch = 19, col = "darkgreen")
+abline(h = 0, col = "blue", lwd = 2, lty = 2)
+legend("topleft", legend = "Reszty", col = "darkgreen", pch = 19, bty = "n")
+```
+Na wykresie błędów widać, że reszty są znacznie mniejsze niż w przypadku modelu liniowego, co sugeruje, że model kwadratowy lepiej dopasowuje się do danych.
