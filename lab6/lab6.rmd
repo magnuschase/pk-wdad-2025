@@ -1,0 +1,628 @@
+---
+title: "Laboratorium 6"
+subtitle: "Wstęp do Analizy Danych | Politechnika Krakowska"
+author: "Jakub Kapała"
+output: 
+  pdf_document:
+    latex_engine: xelatex
+header-includes: |
+  \usepackage{fancyhdr}
+  \usepackage{float}
+  \usepackage{enumitem}
+  \pagestyle{fancy}
+  \fancyhead[L]{\textbf{WdAD - Sprawozdanie - Laboratorium 6}}
+  \fancyhead[R]{\textbf{Jakub Kapała}}
+---
+
+```{r setup, include=FALSE}
+library(Cairo)
+knitr::opts_chunk$set(dev = "CairoPDF", echo = TRUE)
+Sys.setlocale("LC_CTYPE", "pl_PL.UTF-8")
+```
+\begin{center}
+{\small Numer albumu: 151885} \\[0.1cm]
+{\small Data: `r format(Sys.time(), '%d.%m.%Y')`}
+\end{center}
+\newpage
+
+\section*{Testowanie hipotez statystycznych dla średniej populacji w przypadku dużych prób}
+
+Testowanie hipotez statystycznych jest jednym z kluczowych narzędzi analizy danych, umożliwiającym podejmowanie decyzji w oparciu o dane próbne. W praktyce często mamy do czynienia z przypadkami, gdzie interesuje nas porównanie średniej próby z wartością teoretyczną (hipotetyczną średnią populacji). Takie testy wykorzystuje się w różnych dziedzinach, takich jak przemysł, medycyna, socjologia czy finanse, aby odpowiedzieć na pytanie: czy obserwowane dane dostarczają wystarczających dowodów na różnicę w porównaniu do założonej wartości?
+
+W tym laboratorium skupimy się na testach hipotez dla średniej populacji, zakładając, że:
+\begin{itemize}
+  \item Odchylenie standardowe populacji jest znane lub nieznane,
+  \item Wielkość próby jest duża ($n > 30$), co pozwala korzystać z rozkładu normalnego (rozkładu $z$).
+\end{itemize}
+
+\textbf{Cel ćwiczeń:}
+\begin{enumerate}
+  \item Zrozumienie, jak formułować i testować hipotezy statystyczne dotyczące średniej populacji.
+  \item Przeprowadzenie obliczeń statystyki $z$ i jej interpretacja w kontekście odrzucenia lub przyjęcia hipotezy zerowej.
+  \item Praktyczne zastosowanie wiedzy do rozwiązywania rzeczywistych problemów statystycznych za pomocą środowiska R.
+\end{enumerate}
+
+\textbf{Interpretacja wyników:} Jeśli wartość statystyki $z$ jest większa od wartości krytycznej (lub p-wartość jest mniejsza od $\alpha$), odrzucamy hipotezę zerową.
+
+\newpage
+
+## Zadanie 1 - Test dla średniej populacji - Znane odchylenie standardowe
+#### Treść
+
+Firma twierdzi, że średnia waga ich paczek wynosi 5 kg. Aby zweryfikować tę informację, wybrano losowo 100 paczek, których średnia waga wyniosła 5.1 kg. Odchylenie standardowe populacji wynosi 0.3 kg. Czy na poziomie istotności $\alpha = 0.05$ można stwierdzić, że średnia waga paczek różni się od 5 kg?
+
+#### Rozwiązanie
+
+Deklaracja danych - liczebność próby (n), średnia próby (mean_sample), odchylenie standardowe populacji (sd), poziom istotności (alpha) oraz średnia z hipotezy zerowej (mean_0):
+```{r}
+n <- 100
+mean_sample <- 5.1
+sd <- 0.3
+alpha <- 0.05
+mean_0 <- 5
+```
+Statystyka testowa $z$ jest obliczana według wzoru:
+\[
+z = \frac{\bar{x} - \mu_0}{\sigma / \sqrt{n}}
+\]
+Obliczenie statystyki $z$:
+```{r}
+z <- (mean_sample - mean_0) / (sd / sqrt(n))
+```
+\[ 
+z = `r round(z, 4)`
+\]
+
+Teraz obliczmy wartość p-value dla tego testu. Ponieważ jest to test jednostronny, użyjemy funkcji `pnorm`:
+```{r}
+p_value <- 2 * (1 - pnorm(abs(z)))
+```
+\[
+P = `r format(round(p_value, 7), scientific = FALSE)`
+\]
+
+Wartość krytyczna dla poziomu istotności $\alpha = 0.05$ w teście dwustronnym wynosi:
+```{r}
+z_critical <- qnorm(1 - alpha / 2)
+```
+\[
+z_{kr} = `r round(z_critical, 4)`
+\]
+
+Z racji na to, że wartość statystyki $z$ jest większa niż wartość krytyczna ($|z| > z_{kr}$), możemy odrzucić hipotezę zerową. Ostatecznie, ponieważ p-value jest mniejsze niż $\alpha$, również odrzucamy hipotezę zerową.
+
+\newpage
+## Zadanie 2 - Test dla średniej populacji – Brak istotnej różnicy w średniej
+#### Treść
+Badacz uważa, że przeciętna długość życia w mieście wynosi 75 lat. W badaniu przeprowadzonym na próbie 400 mieszkańców średnia długość życia wyniosła 74.6 lat, a odchylenie standardowe populacji wynosi 3 lata. Czy na poziomie istotności $\alpha = 0.01$ można stwierdzić, że przeciętna długość życia różni się od 75 lat?
+
+#### Rozwiązanie
+
+Deklaracja danych - liczebność próby (n), średnia próby (mean_sample), odchylenie standardowe populacji (sd), poziom istotności (alpha) oraz średnia z hipotezy zerowej (mean_0):
+```{r}
+n <- 400
+mean_sample <- 74.6
+sd <- 3
+alpha <- 0.01
+mean_0 <- 75
+```
+Obliczenie statystyki $z$:
+```{r}
+z <- (mean_sample - mean_0) / (sd / sqrt(n))
+```
+\[ 
+z = `r round(z, 4)`
+\]
+
+Teraz obliczmy wartość p-value dla tego testu. Ponieważ jest to test jednostronny, użyjemy funkcji `pnorm`:
+```{r}
+p_value <- 2 * (1 - pnorm(abs(z)))
+```
+\[
+P = `r format(round(p_value, 5), scientific = FALSE)`
+\]
+Wartość krytyczna dla poziomu istotności $\alpha = 0.01$ w teście dwustronnym wynosi:
+```{r}
+z_critical <- qnorm(1 - alpha / 2)
+```
+\[
+z_{kr} = `r round(z_critical, 4)`
+\]
+
+Z racji na to, że wartość statystyki $z$ jest większa niż wartość krytyczna ($|z| > z_{kr}$), odrzucamy hipotezę zerową. Na poziomie istotności $\alpha = 0.01$ można stwierdzić, że przeciętna długość życia różni się od 75 lat.
+
+\newpage
+## Zadanie 3 - Test dla średniej populacji – Porównanie z wartością referencyjną
+#### Treść
+W firmie twierdzi się, że przeciętny czas obsługi klienta wynosi 10 minut. Przeprowadzono badanie na próbie 250 klientów, w którym średni czas obsługi wyniósł 10.4 minuty. Znane odchylenie standardowe populacji to 1.2 minuty. Czy na poziomie istotności $\alpha = 0.05$ można uznać, że średni czas obsługi różni się od 10 minut?
+
+#### Rozwiązanie
+
+Deklaracja danych - liczebność próby (n), średnia próby (mean_sample), odchylenie standardowe populacji (sd), poziom istotności (alpha) oraz średnia z hipotezy zerowej (mean_0):
+```{r}
+n <- 250
+mean_sample <- 10.4
+sd <- 1.2
+alpha <- 0.05
+mean_0 <- 10
+```
+Obliczenie statystyki $z$:
+```{r}
+z <- (mean_sample - mean_0) / (sd / sqrt(n))
+```
+\[ 
+z = `r round(z, 4)`
+\]
+
+Teraz obliczmy wartość p-value dla tego testu. Ponieważ jest to test jednostronny, użyjemy funkcji `pnorm`:
+```{r}
+p_value <- 2 * (1 - pnorm(abs(z)))
+```
+\[
+P = `r format(round(p_value, 9), scientific = FALSE)`
+\]
+Wartość krytyczna dla poziomu istotności $\alpha = 0.05$ w teście dwustronnym wynosi:
+```{r}
+z_critical <- qnorm(1 - alpha / 2)
+```
+\[
+z_{kr} = `r round(z_critical, 4)`
+\]
+
+Ponieważ $|z| > z_{kr}$ oraz p-value $< \alpha$, odrzucamy hipotezę zerową.
+Na poziomie istotności $\alpha = 0.05$ można uznać, że średni czas obsługi różni się od 10 minut.
+
+\newpage
+## Zadanie 4 - Test średniej – Brak znanego odchylenia standardowego
+#### Treść
+Producent twierdzi, że średnia długość kabli w partii wynosi 10 metrów. Przeprowadzono kontrolę na losowej próbie 50 kabli, uzyskując średnią 10.2 metra i odchylenie standardowe próby wynoszące 0.4 metra. Czy na poziomie istotności $\alpha = 0.05$ można stwierdzić, że średnia długość kabli różni się od deklarowanej wartości?
+
+#### Rozwiązanie
+
+Deklaracja danych - liczebność próby (n), średnia próby (mean_sample), odchylenie standardowe próbki (sd), poziom istotności (alpha) oraz średnia z hipotezy zerowej (mean_0):
+```{r}
+n <- 50
+mean_sample <- 10.2
+sd_sample <- 0.4
+alpha <- 0.05
+mean_0 <- 10
+```
+
+Z racji na to, że odchylenie standardowe populacji nie jest znane (znamy jedynie odchylenie standardowe próby), użyjemy rozkładu $t$-Studenta. Obliczamy statystykę $t$:
+```{r}
+t_stat <- (mean_sample - mean_0) / (sd_sample / sqrt(n))
+```
+\[
+t = `r round(t_stat, 4)`
+\]
+Teraz obliczmy stopnie swobody (df) i p-value:
+```{r}
+df <- n - 1
+p_value <- 2 * (1 - pt(abs(t_stat), df))
+```
+\[
+P = `r format(round(p_value, 7), scientific = FALSE)`
+\]
+Obliczmy także wartość krytyczną dla poziomu istotności $\alpha = 0.05$:
+```{r}
+t_crit <- qt(1 - alpha / 2, df)
+```
+\[
+t_{kr} = `r round(t_crit, 4)`
+\]
+
+Ponieważ $|t| > t_{kr}$ oraz p-value $< \alpha$, odrzucamy hipotezę zerową.
+Na poziomie istotności $\alpha = 0.05$ można stwierdzić, że średnia długość kabli różni się od deklarowanej wartości 10 metrów.
+
+\newpage
+## Zadanie 5 - Test średniej – Ocena przeciętnej temperatury
+#### Treść
+Meteorolog twierdzi, że przeciętna temperatura w danym regionie w maju wynosi 18°C. W badaniu przeprowadzonym na podstawie 60 losowo wybranych dni majowych w różnych latach uzyskano średnią 17.8°C i odchylenie standardowe próby 1.5°C. Czy na poziomie istotności $\alpha = 0.05$ można stwierdzić, że przeciętna temperatura różni się od 18°C?
+
+#### Rozwiązanie
+
+Deklaracja danych - liczebność próby (n), średnia próby (mean_sample), odchylenie standardowe próbki (sd), poziom istotności (alpha) oraz średnia z hipotezy zerowej (mean_0):
+```{r}
+n <- 60
+mean_sample <- 17.8
+sd <- 1.5
+alpha <- 0.05
+mean_0 <- 18
+```
+
+Odchylenie standardowe populacji nie jest znane, używam więc rozkładu $t$-Studenta:
+```{r}
+t_stat <- (mean_sample - mean_0) / (sd / sqrt(n))
+```
+\[
+t = `r round(t_stat, 4)`
+\]
+Teraz obliczmy stopnie swobody (df) i p-value:
+```{r}
+df <- n - 1
+p_value <- 2 * (1 - pt(abs(t_stat), df))
+```
+\[
+P = `r format(round(p_value, 2), scientific = FALSE)`
+\]
+Obliczmy także wartość krytyczną dla poziomu istotności $\alpha = 0.05$:
+```{r}
+t_crit <- qt(1 - alpha / 2, df)
+```
+\[
+t_{kr} = `r round(t_crit, 4)`
+\]
+Ponieważ $|t| < t_{kr}$ oraz p-value $> \alpha$, nie ma podstaw do odrzucenia hipotezy zerowej.
+Na poziomie istotności $\alpha = 0.05$ nie można stwierdzić, że przeciętna temperatura różni się od 18°C.
+
+\newpage
+## Zadanie 6 - Test jednostronny – Podejrzenie niższych wyników
+#### Treść
+Średni wynik z egzaminu końcowego na danym kursie wynosi 75 punktów. Nauczyciel podejrzewa, że w tym roku wyniki są niższe. W próbie 40 studentów średni wynik wyniósł 73 punkty, a odchylenie standardowe próby wyniosło 5 punktów. Czy na poziomie istotności $\alpha = 0.01$ można uznać, że wyniki egzaminu są niższe niż 75 punktów?
+
+#### Rozwiązanie
+
+Deklaracja danych - liczebność próby (n), średnia próby (mean_sample), odchylenie standardowe próbki (sd), poziom istotności (alpha) oraz średnia z hipotezy zerowej (mean_0):
+```{r}
+n <- 40
+mean_sample <- 73
+sd <- 5
+alpha <- 0.01
+mean_0 <- 75
+```
+Statystyka $t$ (test jednostronny: czy średnia jest mniejsza niż 75):
+```{r}
+t_stat <- (mean_sample - mean_0) / (sd / sqrt(n))
+df <- n - 1
+p_value <- pt(t_stat, df) # p-value jednostronne (lewy ogon)
+t_crit <- qt(alpha, df) # jednostronny test, lewy ogon
+```
+\[
+t = `r round(t_stat, 4)`
+\]
+\[
+P = `r format(round(p_value, 2), scientific = FALSE)`
+\]
+\[
+t_{kr} = `r round(t_crit, 4)`
+\]
+
+Ponieważ $t < t_{kr}$ oraz p-value $< \alpha$, odrzucamy hipotezę zerową.
+Na poziomie istotności $\alpha = 0.01$ można uznać, że wyniki egzaminu są niższe niż 75 punktów.
+
+\newpage
+## Zadanie 7 - Test średniej – Czas działania baterii
+#### Treść
+Firma produkująca baterie twierdzi, że średni czas działania ich baterii wynosi 100 godzin. Losowo wybrano próbę 50 baterii, a ich średni czas działania wyniósł 98 godzin. Odchylenie standardowe próby wynosi 4 godziny. Czy na poziomie istotności $\alpha = 0.05$ można stwierdzić, że średni czas działania baterii różni się od deklarowanych 100 godzin?
+
+#### Rozwiązanie
+
+Deklaracja danych - liczebność próby (n), średnia próby (mean_sample), odchylenie standardowe próbki (sd), poziom istotności (alpha) oraz średnia z hipotezy zerowej (mean_0):
+```{r}
+n <- 50
+mean_sample <- 98
+sd <- 4
+alpha <- 0.05
+mean_0 <- 100
+```
+Statystyka $t$ (test dwustronny):
+```{r}
+t_stat <- (mean_sample - mean_0) / (sd / sqrt(n))
+df <- n - 1
+p_value <- 2 * (1 - pt(abs(t_stat), df))
+t_crit <- qt(1 - alpha / 2, df)
+```
+\[
+t = `r round(t_stat, 4)`
+\]
+\[
+P = `r format(round(p_value, 5), scientific = FALSE)`
+\]
+\[
+t_{kr} = `r round(t_crit, 4)`
+\]
+Ponieważ $|t| > t_{kr}$ oraz p-value $< \alpha$, odrzucamy hipotezę zerową.
+Na poziomie istotności $\alpha = 0.05$ można stwierdzić, że średni czas działania baterii różni się od deklarowanych 100 godzin.
+
+\newpage
+## Zadanie 9 - Test średniej jednej populacji (test $t$)
+#### Założenia
+\begin{itemize}
+  \item Dane pochodzą z populacji o \textbf{rozkładzie normalnym}.
+  \item Próba jest losowa i mała ($n < 30$).
+\end{itemize}
+
+#### Treść
+\begin{enumerate}[label=9.\arabic*]
+
+\item Dla próby o wielkości $n = 12$, średniej $\bar{x} = 14.3$ i odchyleniu standardowym $s = 2.1$, sprawdź hipotezę:
+\[
+H_0: \mu = 15 \quad \text{vs} \quad H_1: \mu \neq 15
+\]
+
+\item Przyjmij poziom istotności $\alpha = 0.05$.
+
+\item Sprawdź założenie normalności rozkładu przy użyciu testu Shapiro-Wilka.
+
+\item Wykonaj test t dla jednej średniej.
+\end{enumerate}
+
+#### Rozwiązanie
+\begin{enumerate}[label=]
+  \item {}
+\end{enumerate}
+
+Najpierw ustawiam seed na swój numer albumu dla powtarzalności wyników:
+```{r}
+set.seed(151885)
+```
+Następnie deklaruję dane:
+```{r}
+n <- 12
+mean_sample <- 14.3
+sd_sample <- 2.1
+alpha <- 0.05
+mean_0 <- 15
+```
+Generowanie danych z rozkładu normalnego:
+```{r}
+data <- rnorm(n, mean = mean_sample, sd = sd_sample)
+```
+Sprawdzam normalność rozkładu przy użyciu testu Shapiro-Wilka:
+```{r}
+shapiro_test <- shapiro.test(data)
+shapiro_test
+```
+Wynik testu Shapiro-Wilka:
+Statystyka $W$ wynosi `r round(shapiro_test$statistic, 4)`, a p-value to `r format(round(shapiro_test$p.value, 5), scientific = FALSE)`. Ponieważ p-value jest większe niż $\alpha = 0.05$, nie ma podstaw do odrzucenia hipotezy o normalności rozkładu.
+\newpage
+
+Test dwustronny - $H_0: \mu = 15$ vs $H_1: \mu \neq 15$:
+```{r}
+t_test <- t.test(data, mu = mean_0, alternative = "two.sided")
+t_test
+```
+Z testu wynika, że statystyka $t$ wynosi `r round(t_test$statistic, 4)`, a p-value to `r format(round(t_test$p.value, 5), scientific = FALSE)`. Z racji na to, że p-value jest większe niż $\alpha = 0.05$, nie ma podstaw do odrzucenia hipotezy zerowej. Średnia z próby nie jest istotnie różna od 15.
+
+\newpage
+## Zadanie 10 - Test dwóch średnich dla prób niezależnych (równe wariancje)
+#### Założenia
+\begin{itemize}
+  \item Obie próbki pochodzą z populacji o \textbf{rozkładzie normalnym}.
+  \item Próby są \textbf{niezależne}.
+  \item Wariancje populacji są \textbf{równe} (sprawdzone przed testem).
+\end{itemize}
+#### Treść
+\begin{enumerate}[label=10.\arabic*]
+
+\item Dane dla dwóch prób:
+\begin{itemize}
+  \item Próba 1: $n_1 = 10$, $\bar{x}_1 = 13.5$, $s_1 = 2.0$
+  \item Próba 2: $n_2 = 12$, $\bar{x}_2 = 12.0$, $s_2 = 1.8$
+\end{itemize}
+
+\item Sprawdź założenie normalności dla obu prób przy użyciu testu Shapiro-Wilka.
+
+\item Przeprowadź test hipotezy:
+\[
+H_0: \mu_1 = \mu_2 \quad \text{vs} \quad H_1: \mu_1 \neq \mu_2
+\]
+przy założeniu równości wariancji.
+
+\item Przyjmij poziom istotności $\alpha = 0.05$.
+
+\end{enumerate}
+
+#### Rozwiązanie
+\begin{enumerate}[label=]
+	\item {}
+\end{enumerate}
+
+Deklaracja danych dla obu prób:
+```{r}
+n1 <- 10
+mean1 <- 13.5
+s1 <- 2
+
+n2 <- 12
+mean2 <- 12.0
+s2 <- 1.8
+
+alpha <- 0.05
+```
+
+Generowanie danych z rozkładu normalnego dla obu prób:
+```{r}
+set.seed(151885)
+data1 <- rnorm(n1, mean = mean1, sd = s1)
+data2 <- rnorm(n2, mean = mean2, sd = s2)
+```
+Sprawdzanie normalności rozkładu dla obu prób przy użyciu testu Shapiro-Wilka:
+```{r}
+shapiro_test1 <- shapiro.test(data1)
+shapiro_test1
+```
+\newpage
+```{r}
+shapiro_test2 <- shapiro.test(data2)
+shapiro_test2
+```
+
+Statystyka $W$ dla próby 1 wynosi `r round(shapiro_test1$statistic, 4)`, a p-value to `r format(round(shapiro_test1$p.value, 5), scientific = FALSE)`. Dla próby 2 statystyka $W$ wynosi `r round(shapiro_test2$statistic, 4)`, a p-value to `r format(round(shapiro_test2$p.value, 5), scientific = FALSE)`. Ponieważ p-value w obu przypadkach jest większe niż $\alpha = 0.05$, nie ma podstaw do odrzucenia hipotezy o normalności rozkładu.
+
+Test t dla dwóch średnich przy założeniu równości wariancji (test dwustronny):
+```{r}
+t_test_equal_var <- t.test(data1, data2, var.equal = TRUE, alternative = "two.sided")
+t_test_equal_var
+```
+Ponieważ p-value $> \alpha$, nie ma podstaw do odrzucenia hipotezy zerowej.
+Na poziomie istotności $\alpha = 0.05$ nie można stwierdzić, że średnie obu populacji są różne.
+\newpage
+
+## Zadanie 11 - Test dwóch średnich dla prób niezależnych (nierówne wariancje)
+#### Założenia
+\begin{itemize}
+  \item Obie próbki pochodzą z populacji o \textbf{rozkładzie normalnym}.
+  \item Próby są \textbf{niezależne}.
+  \item Wariancje populacji są \textbf{różne}.
+\end{itemize}
+
+#### Treść
+\begin{enumerate}[label=11.\arabic*]
+\item Powtórz dane z zadania 10, ale tym razem nie zakładaj równości wariancji.
+\item Sprawdź założenie normalności dla obu prób.
+\item Przeprowadź test hipotezy:
+	\begin{itemize}
+		\item $H_0: \mu_1 = \mu_2$
+		\item $H_1: \mu_1 \neq \mu_2$
+	\end{itemize}
+\end{enumerate}
+#### Rozwiązanie
+\begin{enumerate}[label=]
+	\item {}
+\end{enumerate}
+
+Deklaracja danych dla obu prób:
+```{r}
+n1 <- 10
+mean1 <- 13.5
+s1 <- 2
+
+n2 <- 12
+mean2 <- 12.0
+s2 <- 1.8
+
+alpha <- 0.05
+```
+Generowanie danych z rozkładu normalnego dla obu prób:
+```{r}
+set.seed(151885)
+data1 <- rnorm(n1, mean = mean1, sd = s1)
+data2 <- rnorm(n2, mean = mean2, sd = s2)
+```
+Sprawdzanie normalności rozkładu dla obu prób przy użyciu testu Shapiro-Wilka:
+```{r}
+shapiro_test1 <- shapiro.test(data1)
+shapiro_test1
+```
+\newpage
+```{r}
+shapiro_test2 <- shapiro.test(data2)
+shapiro_test2
+```
+
+Statystyka $W$ dla próby 1 wynosi `r round(shapiro_test1$statistic, 4)`, a p-value to `r format(round(shapiro_test1$p.value, 5), scientific = FALSE)`. Dla próby 2 statystyka $W$ wynosi `r round(shapiro_test2$statistic, 4)`, a p-value to `r format(round(shapiro_test2$p.value, 5), scientific = FALSE)`. Ponieważ p-value w obu przypadkach jest większe niż $\alpha = 0.05$, nie ma podstaw do odrzucenia hipotezy o normalności rozkładu.
+
+Test t dla dwóch średnich bez założenia równości wariancji (Welch's t-test):
+```{r}
+t_test_unequal_var <- t.test(data1, data2, var.equal = FALSE, alternative = "two.sided")
+t_test_unequal_var
+```
+Ponieważ p-value $> \alpha$, nie ma podstaw do odrzucenia hipotezy zerowej.
+Na poziomie istotności $\alpha = 0.05$ nie można stwierdzić, że średnie obu populacji są różne (również przy braku założenia równości wariancji).
+
+\newpage
+
+## Zadanie 12 - Test wariancji jednej populacji (test Chi-kwadrat)
+#### Założenia
+\begin{itemize}
+  \item Dane pochodzą z populacji o \textbf{rozkładzie normalnym}.
+  \item Próba jest losowa i mała ($n < 30$).
+\end{itemize}
+#### Treść
+\begin{enumerate}[label=12.\arabic*]
+\item Dla próby o wielkości $n = 15$ i wariancji $s^2 = 4.5$, sprawdź hipotezę:
+	\begin{itemize}
+		\item $H_0: \sigma^2 = 4$
+		\item $H_1: \sigma^2 \neq 4$
+	\end{itemize}
+\item Przyjmij poziom istotności $\alpha = 0.05$.
+\end{enumerate}
+#### Rozwiązanie
+
+Deklaracja danych:
+```{r}
+n <- 15
+sigma2_0 <- 4
+sd = sqrt(4.5)
+alpha <- 0.05
+```
+Generowanie danych z rozkładu normalnego:
+```{r}
+set.seed(151885)
+data <- rnorm(n, mean = 0, sd = sd)
+```
+
+Test Chi-kwadrat dla wariancji:
+```{r}
+chi_sq <- (n - 1) * var(data) / sigma2_0
+df <- n - 1
+```
+P-value dla testu Chi-kwadrat (dwustronny):
+```{r}
+p_value <- 2 * min(pchisq(chi_sq, df), 1 - pchisq(chi_sq, df))
+```
+Wartości krytyczne:
+```{r}
+chi_sq_left <- qchisq(alpha / 2, df)
+chi_sq_right <- qchisq(1 - alpha / 2, df)
+```
+\[
+\chi^2 = `r round(chi_sq, 4)`
+\]
+\[
+P = `r format(round(p_value, 5), scientific = FALSE)`
+\]
+\[
+\chi^2_{L} = `r round(chi_sq_left, 4)`, \quad \chi^2_{R} = `r round(chi_sq_right, 4)`
+\]
+Ponieważ $\chi^2$ mieści się w przedziale $[\chi^2_L, \chi^2_R]$ oraz p-value $> \alpha$, nie ma podstaw do odrzucenia hipotezy zerowej.
+Na poziomie istotności $\alpha = 0.05$ nie można stwierdzić, że wariancja różni się od 4.
+
+\newpage
+
+## Zadanie 13 - Test równości dwóch wariancji (test F)
+#### Założenia
+\begin{itemize}
+  \item Dane pochodzą z populacji o \textbf{rozkładzie normalnym}.
+  \item Próby są \textbf{niezależne}.
+\end{itemize}
+#### Treść
+\begin{enumerate}[label=13.\arabic*]
+\item Dla prób:
+	\begin{itemize}
+		\item Próba 1: $n_1 = 10$, $s_1 = 2.3$
+		\item Próba 2: $n_2 = 12$, $s_2 = 3.1$
+	\end{itemize}
+\item Sprawdź hipotezę:
+	\begin{itemize}
+		\item $H_0: \sigma_1^2 = \sigma_2^2$
+		\item $H_1: \sigma_1^2 \neq \sigma_2^2$
+	\end{itemize}
+\item Przyjmij poziom istotności $\alpha = 0.05$.
+\end{enumerate}
+#### Rozwiązanie
+
+Deklaracja danych dla obu prób:
+```{r}
+n1 <- 12
+s1 <- 2.3
+
+n2 <- 12
+s2 <- 3.1
+
+alpha <- 0.05
+```
+Generowanie danych z rozkładu normalnego dla obu prób:
+```{r}
+set.seed(151885)
+data1 <- rnorm(n1, mean = 0, sd = s1)
+data2 <- rnorm(n2, mean = 0, sd = s2)
+```
+Test F dla równości wariancji:
+```{r}
+f_test <- var.test(data1, data2, alternative = "two.sided")
+f_test
+```
+Ponieważ p-value $> \alpha$, nie ma podstaw do odrzucenia hipotezy zerowej.
+Na poziomie istotności $\alpha = 0.05$ nie można stwierdzić, że wariancje obu populacji są różne.
